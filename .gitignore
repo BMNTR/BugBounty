@@ -1,0 +1,24 @@
+# Bug bounty - don't leak recon data, credentials, or build artifacts
+programs/
+recon/
+screenshots/
+archives/
+findings/
+reports/
+logs/
+scouting/
+targets/
+tools/
+wordlists/
+node_modules/
+__pycache__/
+*.apk
+*.zip
+*.exe
+cookies.txt
+.env
+*.local
+other-repos/
+repos/
+gojek_test_response.txt
+gojek-traffic-snapshot.txt

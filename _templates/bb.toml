@@ -1,0 +1,29 @@
+[program]
+name = "target-name"
+platform = "hackerone" # or "yeswehack"
+platform_url = "https://hackerone.com/target-name"
+private = false
+bbp = true
+
+[scope]
+in_scope = [
+    "*.target.com",
+    "api.target.com",
+]
+out_of_scope = [
+    "*.blog.target.com",
+    "*.careers.target.com",
+]
+bounty_min = 500
+bounty_max = 10000
+currency = "USD"
+
+[recon]
+domains = ["target.com", "target.io"]
+subdomain_source = "subfinder"
+url_collection = true
+port_scan = false
+
+[contacts]
+triage_email = ""
+expected_response_days = 30

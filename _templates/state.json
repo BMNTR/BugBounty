@@ -1,0 +1,14 @@
+{
+  "program": "",
+  "slug": "",
+  "created": "",
+  "updated": "",
+  "phase": "recon",
+  "domains": [],
+  "subdomains": { "total": 0, "scanned": false, "file": "" },
+  "alive": { "total": 0, "scanned": false, "file": "" },
+  "urls": { "total": 0, "scanned": false, "file": "" },
+  "scans": [],
+  "queue": [],
+  "errors": []
+}

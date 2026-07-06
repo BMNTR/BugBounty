@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "skills": {
+    "code-security": {
+      "source": "semgrep/skills",
+      "sourceType": "github",
+      "skillPath": "skills/code-security/SKILL.md",
+      "computedHash": "a4b931c20f8ebe7d4de8a4a91df449684516f1af129b773c34ed0e02b294a622"
+    },
+    "ghost-proxy": {
+      "source": "ghostsecurity/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/ghost/skills/proxy/SKILL.md",
+      "computedHash": "3fc72d8c8115c56460eefe0c1521870eab82b61e97e4fea8f115d89ce6a90043"
+    },
+    "ghost-repo-context": {
+      "source": "ghostsecurity/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/ghost/skills/repo-context/SKILL.md",
+      "computedHash": "16535115965e7272c46f5f4e6ad85653c5255d7ca824b1c74576d61735c09102"
+    },
+    "ghost-report": {
+      "source": "ghostsecurity/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/ghost/skills/report/SKILL.md",
+      "computedHash": "bba83bf211f745c2f4673c4f50b4e920be26b192b6dea50271e4d66ee9916102"
+    },
+    "ghost-scan-code": {
+      "source": "ghostsecurity/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/ghost/skills/scan-code/SKILL.md",
+      "computedHash": "74966232bac2a45ba565811701b194a818c4d5290d204b9735044f078b0ec6c4"
+    },
+    "ghost-scan-deps": {
+      "source": "ghostsecurity/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/ghost/skills/scan-deps/SKILL.md",
+      "computedHash": "82d972451f1eaa72e83f89874be8a5db5cf9e89989c776b244a1bfe83311f40f"
+    },
+    "ghost-scan-secrets": {
+      "source": "ghostsecurity/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/ghost/skills/scan-secrets/SKILL.md",
+      "computedHash": "9158ddc61203621906ff29417bdce065ed60ac69368068f043ac2e7a35d29da9"
+    },
+    "ghost-validate": {
+      "source": "ghostsecurity/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/ghost/skills/validate/SKILL.md",
+      "computedHash": "31d7b5aa6926fc7035146c2ae5515e58c1e9a1b2363207dea6090d05d3916429"
+    },
+    "security-auditor": {
+      "source": "charon-fan/agent-playbook",
+      "sourceType": "github",
+      "skillPath": "skills/security-auditor/SKILL.md",
+      "computedHash": "d3676d0a6902f96697486e13f022dd7523022cca1cd2dd8051764a4178fbb2a2"
+    },
+    "security-scanning-security-sast": {
+      "source": "rmyndharis/antigravity-skills",
+      "sourceType": "github",
+      "skillPath": "skills/security-scanning-security-sast/SKILL.md",
+      "computedHash": "8105e62a7ad292937928f1235796e4efa94df7f04478fbaccf848ebd4a333e25"
+    },
+    "sharp-edges": {
+      "source": "trailofbits/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/sharp-edges/skills/sharp-edges/SKILL.md",
+      "computedHash": "96fccaa023922c19994b13e77800144d21c16c7a742136ff09d74dfa6973d8d4"
+    },
+    "variant-analysis": {
+      "source": "trailofbits/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/variant-analysis/skills/variant-analysis/SKILL.md",
+      "computedHash": "0c2d338622a7b35199534e1641615ddd71d6eaa631e1ea8c4be9190747d056d0"
+    },
+    "vulnhunter": {
+      "source": "sendaifun/skills",
+      "sourceType": "github",
+      "skillPath": "skills/vulnhunter/SKILL.md",
+      "computedHash": "64ed06b4baeda8b3b90e2b77cf722c9c088bd4cab1111b74c148498272399ee6"
+    }
+  }
+}
