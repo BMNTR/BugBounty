@@ -34,7 +34,7 @@ Bug fix = root cause, not symptom: a report names a symptom. Grep every caller o
 
 ## Bug Bounty Rules
 
-- Work only on explicitly in-scope assets.
+- **STRICT SCOPE ENFORCEMENT**: Work ONLY on explicitly in-scope assets defined in the program's scope config. You MUST verify every domain, IP, or endpoint against the IN-SCOPE list before running any tools. If it is not explicitly in-scope, or if it matches an OUT-OF-SCOPE rule, DO NOT touch it.
 - Do not perform DoS, brute force, spam, credential stuffing, social engineering, phishing, or testing against other users.
 - Do not use leaked credentials or private data.
 - Do not fabricate screenshots, runtime results, impact, exploitability, or bounty expectations.
@@ -44,6 +44,7 @@ Bug fix = root cause, not symptom: a report names a symptom. Grep every caller o
 - Run bug bounty work visibly whenever practical. Use visible terminal windows for installs, cloning, builds, tests, PoCs, APK decoding, dependency setup, long recon, and final validation. Background commands for quick file reads, `rg` searches, small bookkeeping edits.
 - Use HackerOne format for HackerOne reports.
 - Use YesWeHack `DESCRIPTION / EXPLOITATION / POC / RISK / REMEDIATION` format for YesWeHack reports.
+- **WORKSPACE HYGIENE**: DO NOT scatter project files in the root `C:\BugBounty` directory. When working on a specific target/project, ALL related files, scripts, dumps, and reports MUST be placed strictly inside its dedicated folder (e.g., `programs/<target-name>/`). Keep the root directory perfectly clean.
 
 ## Templates
 
@@ -54,21 +55,13 @@ Bug fix = root cause, not symptom: a report names a symptom. Grep every caller o
 ## Skill Reference
 
 - Base skill: `C:\BugBounty\SKILL.md` — encyclopedia (26 sections, 95KB, commands & workflows)
-- Skill pack: `C:\BugBounty\skills\` — task-specific workflows (11 skills, routing in `skills/AGENTS.md`)
-  1. `bbp-program-triage` — assess target before starting
-  2. `bbp-web-recon` — web recon pipeline (subdomains → URLs → content discovery → nuclei)
-  3. `bbp-duplicate-guard` — check existing reports before deep dive
-  4. `bbp-source-code-audit` — open-source review
-  5. `bbp-android-apk-audit` — Android APK analysis
-  6. `bbp-evidence-workbench` — organize screenshots, terminal output, hashes
-  7. `bbp-report-writer` — HackerOne / YesWeHack report generation
-  8. `bbp-api-audit` — API security testing
-  9. `bbp-crypto-audit` — cryptography review
-  10. `bbp-rust-security-review` — Rust security audit
-  11. `bbp-cloud-security-audit` — cloud infrastructure review
-
-Skills provide specialized instructions and workflows for specific tasks.
-Use the skill tool to load a skill when a task matches its description.
+- Skills: `C:\BugBounty\.agents\skills\` — 28 files, load via `/skill <name>`:
+  - **bbp-ops** — `bbp-program-triage`, `bbp-duplicate-guard`, `bbp-evidence-workbench`, `bbp-report-writer`
+  - **bbp-recon** — `bbp-web-recon`, `bbp-subdomain-takeover`, `bbp-cloud-security-audit`
+  - **bbp-web-attacks** — `bbp-xss-hunter`, `bbp-sqli-hunter`, `bbp-ssrf-hunter`, `bbp-osci-hunter`, `bbp-xxe-hunter`, `bbp-prototype-pollution`, `bbp-cache-poisoning`, `bbp-file-upload-lfi`
+  - **bbp-web-security** — `bbp-api-audit`, `bbp-auth-bypass`, `bbp-graphql-audit`, `bbp-business-logic`, `bbp-waf-bypass`
+  - **bbp-mobile** — `bbp-android-apk-audit`, `bbp-mobile-reverse-engine`, `bbp-mobile-dynamic-analysis`, `bbp-mobile-ipc-exploit`, `bbp-mobile-local-storage`
+  - **bbp-source-review** — `bbp-source-code-audit`, `bbp-rust-security-review`, `bbp-crypto-audit`
 
 ## Slash Commands
 
@@ -80,13 +73,19 @@ Use the skill tool to load a skill when a task matches its description.
 1. Run `.\scripts\program.ps1 -Url <url>` which:
    - Fetches the program page and extracts scope domains
    - Classifies target type (web, API, mobile, source, cloud, crypto, rust)
+   - Runs Passive Recon first (Google dorking, GitHub dorking, Shodan, Wayback)
    - Runs full recon pipeline automatically:
      - subfinder, assetfinder, amass (passive) for subdomain enumeration
-     - gau, waybackurls for URL history
-     - dnsx for DNS resolution
-     - httpx for HTTP probing
-     - katana, hakrawler for web crawling
-     - nuclei for vulnerability scanning
+     - **SCOPE FILTERING**: ALL discovered subdomains MUST be filtered against the in-scope and out-of-scope rules before proceeding.
+     - dnsx for DNS resolution (on filtered domains)
+     - naabu for fast port scanning (feed open ports to nmap)
+     - httpx for HTTP probing (find alive servers on open ports)
+     - gau, waybackurls for URL history (ONLY on alive HTTP hosts)
+     - SecretFinder / subjs on JS files to extract leaked credentials
+     - katana, hakrawler for active web crawling
+     - arjun, ffuf for hidden parameter and content discovery
+     - dalfox for automated XSS scanning on discovered parameters (use interactsh-client for blind XSS)
+     - nuclei for vulnerability scanning (use interactsh-client for OAST/Blind bugs)
    - Runs classification-specific scans:
      - **API**: endpoint discovery from URL corpus, live path probing
      - **Cloud**: S3/GCP bucket enumeration, DNS CNAME takeover checks
@@ -132,79 +131,98 @@ Use the skill tool to load a skill when a task matches its description.
 /program https://yeswehack.com/programs/example-program my-program
 ```
 
-## Autonomous Recon Loop
+## Scan Loop
 
-After `/program` completes, the agent enters an autonomous loop for each program:
+### 1. Prioritize berdasarkan findings
+1. Critical/high nuclei → validate & exploit deeper
+2. Hidden Content / Admin Panels (dari ffuf) → manual review, bypass auth
+3. API endpoints & Hidden Params (dari arjun/ffuf) → sqlmap, test auth, test IDOR/BOLA
+4. JWT/auth endpoints → crypto review
+5. Open ports (nmap) → service-specific checks
+6. Low/medium nuclei → validate, skip if FP
+7. Remaining alive hosts → deep crawling, js analysis
 
-### State File
-`programs/<slug>/state.json` — single source of truth. Read before any action.
+### 2. Depth over breadth
+- Found SQLi? Pivot: sqlmap --os-shell, enumerate tables. Don't switch host.
+- Found XSS? Try blind XSS, eval-based polyglots.
+- **3 bypass attempts minimum** sebelum declare unexploitable.
 
-### Loop Rules (applied every time agent is invoked for this program)
-
-**1. Always read state first**
-```powershell
-$state = Get-Content "programs/<slug>/state.json" | ConvertFrom-Json
+### 3. Rate limiting
+Default tool flags sering flood. Tambahin delay/rate ke setiap scan:
 ```
+# nuclei
+nuclei -l alive.txt -t cves/ -rate-limit 30 -bulk-size 25
 
-**2. Check queue before anything new**
-- If `state.queue` has items, process the highest priority item
-- If queue is empty, evaluate what to do next based on state.phase
+# ffuf (slow biar ga WAF trigger)
+ffuf -u https://$TARGET/FUZZ -w wordlist.txt -rate 30
 
-**3. Don't re-scan**
-- Check `state.subdomains.scanned`, `state.alive.scanned`, `state.urls.scanned`
-- Don't re-run tools that already completed
-- Exception: user explicitly asks for re-scan
+# httpx (ngebang semua host sekaligus)
+httpx -l subs.txt -rl 50
 
-**4. Prioritize based on findings**
-Order of priority:
-1. Critical/high nuclei findings → validate & exploit deeper
-2. API endpoints → probe with sqlmap, test auth
-3. JWT/auth endpoints → crypto review
-4. Open ports (from nmap) → service-specific checks
-5. Low/medium nuclei findings → validate, skip if FP
-6. Remaining alive hosts → content discovery (ffuf)
+# katana (tambah delay)
+katana -u https://$TARGET -delay 2s
+```
+Kalo mulai dapet 403/429, turunin rate sampe stabil.
 
-**5. Escalate depth (not breadth)**
-- Found SQLi? Don't switch to another host — pivot: sqlmap --os-shell, enumerate tables
-- Found XSS? Try blind XSS, steal cookies
-- Only move to next target when current vector exhausted
-
-**6. Self-correction on errors**
+### 5. Error recovery
 
 | Error | Action |
 |-------|--------|
-| WAF block (403, 429) | log to `state.errors`, try `-H "X-Forwarded-For: 127.0.0.1"`, try slower rate, skip tool for this host |
-| Tool crash/timeout | log to `state.errors`, retry once with longer timeout, then skip |
-| No results from tool | move to next tool, log as info |
+| WAF block (403/429) | try `-H "X-Forwarded-For: 127.0.0.1"`, slow rate, alternative endpoints |
+| Payload filtered | URL encoding, double encoding, null bytes, alt syntax |
+| Tool crash/timeout | retry once with longer timeout, then skip |
+| No results from tool | retry with aggressive/deep flags before giving up |
 | Network error | retry after 30s, skip after 3 failures |
 
-**7. Update state after each action**
-```powershell
-$state.updated = Get-Date -Format "yyyy-MM-ddTHH:mm:ss"
-$state.scans += @{ tool="..."; date="..."; target="..."; findings=N; status="done" }
-$state | ConvertTo-Json | Set-Content "programs/<slug>/state.json"
+### 6. Termination
+Stop when: queue empty AND all alive hosts through ≥1 vuln scan **OR** user says stop **OR** 3 consecutive runs produce zero new findings.
+
+### 7. Pencatatan
+Simpan progres di `programs/<slug>/state.json`:
+```json
+{ "phase": "recon_done", "alive": 42, "done": ["nuclei", "ffuf"], "queue": ["sqlmap-/api/login"] }
 ```
 
-**8. Termination condition**
-Loop stops when:
-- `state.queue` empty AND all alive hosts have been through at least one vuln scan
-- OR: user says stop
-- OR: 3 consecutive scan runs produce zero new findings (diminishing returns)
+## Passive Reconnaissance
 
-### Example flow
+Jalanin **sebelum scan aktif** — zero interaction with target.
+
+### Google Dorking
+Cari exposed files, config leaks, admin panels via search engine:
 ```
-state.json { phase: "recon", subdomains.scanned: false }
-  → agent runs: skip, state becomes { phase: "recon_done", subdomains.scanned: true, alive.total: 42 }
-
-state.json { phase: "recon_done", alive.total: 42, queue: ["nuclei-default"] }
-  → agent runs: nuclei on 42 alive hosts
-  → nuclei finds 3 critical, state updates: scans+=[nuclei:3critical], queue+=["sqlmap-/api/login"]
-
-state.json { scans: [{tool:"nuclei", findings:3}], queue: ["sqlmap-/api/login"] }
-  → agent runs: sqlmap on /api/login endpoint
-  → sqlmap finds injection, state updates, queue becomes empty
-  → termination: all done, report generated
+site:target.com ext:sql | ext:bak | ext:swp | ext:env
+site:target.com intitle:"index of" | intext:"phpinfo()"
+site:target.com intitle:"login" | intitle:"admin" inurl:admin
+site:target.com inurl:wp-config | inurl:config.php
+site:target.com filetype:log | filetype:conf | filetype:ini
 ```
+Gunakan `site:` dengan subdomain terverifikasi. Cek juga `cache:` buat lihat versi lama halaman yang mungkin sudah dihapus tapi masih terindeks.
+
+### GitHub Dorking
+Cari kredensial dan internal paths yang bocor di public repo:
+```
+"target.com" "api_key" | "secret" | "password" | "token"
+"target.com" "aws_access_key_id" | "AKIA" | "-----BEGIN RSA PRIVATE KEY-----"
+"target.com" filename:.env | filename:config.json | filename:credentials
+org:targetorg "security" | "vulnerability" | "TODO"
+```
+Prioritas: high-star repos, recent commits, gist. Gunakan search qualifiers: `language:`, `path:`, `extension:`.
+
+### Shodan / Censys
+Cari exposed services, open databases, default creds:
+```
+shodan search "hostname:target.com"
+shodan search "ssl:target.com"
+censys search "services.service_name: HTTP and dns.names: target.com"
+```
+Fokus: port 22 (SSH), 3306 (MySQL), 27017 (MongoDB), 6379 (Redis), 9200 (Elasticsearch), 3389 (RDP), 5432 (PostgreSQL), port non-standar.
+
+### Wayback Machine / URL History
+```
+gau --subs target.com
+waybackurls target.com
+```
+Extract endpoint, parameter, JS paths dari historical data — banyak hidden endpoint yg udah gak aktif tapi masih bisa diakses via Wayback.
 
 ## Cookie/Login Setup
 
@@ -227,6 +245,15 @@ The script checks for `cookies.txt` in the project root. If present, it sends th
 - `.\scripts\mobile_audit.ps1 -ApkPath <path>` — Android APK analysis
 - `.\scripts\secrets_scan.ps1 -Path <path>` — secret scanning (gitleaks, trufflehog)
 - `.\scripts\update_all_tools.ps1` — update all tools and wordlists
+
+## Lessons Learned
+
+1. **Screenshot pas scan jalan**, jangan nunggu kelar — bukti real-time terminal + timestamp
+2. **Verifikasi manual langsung** setelah nemu temuan — endpoint bisa tiba-tiba 404 / kena WAF
+3. **Simpan interactsh/OAST logs sendiri** — jangan cuma andelin output nuclei
+4. **Cek response body** — 200 OK bisa jadi SPA catch-all atau WAF block page, bukan endpoint beneran
+5. **Prioritas manual RCE** — automated scan buat discovery, manual exploitation buat validasi final
+6. **Timestamp file** — CreationTime/LastWriteTime bisa jadi bukti forensik kalo ada dispute
 
 ## External References
 

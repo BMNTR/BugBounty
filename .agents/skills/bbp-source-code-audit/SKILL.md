@@ -28,7 +28,20 @@ Run focused searches first:
 - dangerous catches: `catch`, `Throwable`, `Exception`, `panic`, `recover`
 - business logic: `balance`, `withdraw`, `transfer`, `refund`, `payment`
 
-## Validation
+### CI/CD Pipeline Audit
+Cari workflow files di `.github/workflows/`, `.gitlab-ci.yml`, `Jenkinsfile`, `bitbucket-pipelines.yml`:
+
+```
+# injection: apakah ada "pull_request_target" dengan checkout dan run script?
+# secret leak: apakah ada secret di echo/print step?
+# misconfig: apakah ada write access ke registry/deployment?
+# artifact exposure: apakah build artifact diupload ke public bucket?
+- `run: ${{ github.event.issue.title }}` — RCE via PR title injection
+- `pull_request_target` tanpa `ref` checkout — attacker-controlled code execution
+- Secrets di `env:` atau `with:` tersambung ke output step
+```
+
+### Validation
 
 For every candidate:
 

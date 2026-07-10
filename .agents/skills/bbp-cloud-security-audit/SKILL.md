@@ -34,6 +34,14 @@ Only test assets reachable without provider credentials:
 - npm package: check `postinstall` scripts in package.json.
 - Environment file exposure: `.env`, `.env.prod`, `config.*.json`.
 
+### Docker / Kubernetes
+- Check exposed Docker daemon socket: `http://<target>:2375/version` — open Docker API = RCE.
+- Registry exposure: `https://registry.<target>/v2/_catalog`, `https://<target>:5000/v2/_catalog`.
+- K8s API server: `https://<target>:6443/api/v1/namespaces` — cek anonymous auth.
+- K8s Dashboard: `https://<target>:30000` atau path `/api/v1/namespaces/kube-system` — default creds / skip login.
+- etcd: `http://<target>:2379/version` — no auth = full cluster access.
+- Container breakout via privileged mode / hostPath mount — cuma bisa validasi kalo ada akses shell ke container.
+
 ## Tools
 
 ```bash

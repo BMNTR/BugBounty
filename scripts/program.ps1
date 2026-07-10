@@ -1,4 +1,4 @@
-﻿param(
+param(
     [Parameter(Mandatory = $true, Position = 0)]
     [string]$Url,
     [string]$ProgramName,
@@ -106,31 +106,77 @@ try {
     Write-Output "  HTTP $($resp.StatusCode) ($($body.Length) bytes)"
     if ($cookieHeader) { Write-Output "  Authenticated via cookies.txt" }
 } catch {
+    $statusCode = $_.Exception.Response.StatusCode.value__
     Write-Output "  Fetch failed: $($_.Exception.Message)"
+    if ($statusCode -eq 401 -or $statusCode -eq 403 -or $_.Exception.Message -match "401|403") {
+        Write-Output "  [!] Authentication required to view program details."
+        Write-Output "  [!] Triggering auto-login..."
+        
+        $loginUrl = if ($Url -match "yeswehack.com") { "https://yeswehack.com/auth/login" } 
+                    elseif ($Url -match "hackerone.com") { "https://hackerone.com/users/sign_in" }
+                    elseif ($Url -match "bugcrowd.com") { "https://bugcrowd.com/user/sign_in" }
+                    else { $Url }
+                    
+        & node "C:\BugBounty\scripts\auto-login.js" $loginUrl
+        
+        # Retry with new cookies
+        if (Test-Path $cookieFile) {
+            Write-Output "  [+] Retrying fetch with new cookies..."
+            $newCookieLines = Get-Content $cookieFile | Where-Object { $_ -notmatch '^#' -and $_.Trim() -ne '' }
+            $newCookies = @()
+            foreach ($line in $newCookieLines) {
+                $parts = $line -split '\t'
+                if ($parts.Count -ge 7) { $newCookies += "$($parts[5])=$($parts[6])" }
+            }
+            if ($newCookies.Count -gt 0) { 
+                $params.Headers = @{ Cookie = $newCookies -join '; ' }
+                try {
+                    $resp = Invoke-WebRequest @params
+                    $body = $resp.Content
+                    Write-Output "  [+] Retry HTTP $($resp.StatusCode) ($($body.Length) bytes)"
+                } catch {
+                    Write-Output "  [-] Retry failed: $($_.Exception.Message)"
+                }
+            }
+        }
+    }
 }
 
 # Extract domains
 if ($body) {
-    $matches = [System.Text.RegularExpressions.Regex]::Matches($body, '(?:https?://)?(?:[\w-]+\.)+[\w-]{2,}(?:/[\w\-./?%&=]*)?')
-    $skip = @('google','facebook','twitter','github','linkedin','youtube','hackerone','yeswehack','bugcrowd','intigriti','cloudflare','gravatar','googleapis','gstatic','jquery','bootstrap','githubusercontent','cdn.')
-    foreach ($m in $matches) {
-        $d = $m.Value.Trim().Trim('/') -replace '^https?://', ''
-        if ($d -match '\.(png|jpg|jpeg|gif|css|js|svg|ico|woff|woff2|ttf|eot|pdf)$') { continue }
-        $d = $d -replace '/.*$', ''
-        $skipIt = $false
-        foreach ($s in $skip) { if ($d -match [regex]::Escape($s)) { $skipIt = $true; break } }
-        if ($skipIt) { continue }
-        if ($d -match '^[a-zA-Z0-9][-a-zA-Z0-9]*(\.[-a-zA-Z0-9]+)+$' -and $d -notmatch '\.(html|aspx?|php)$') {
-            $tld = $d -replace '^.*\.', ''
-            if ($tld.Length -ge 2 -and $tld -match '^[a-zA-Z]+$') { $domains += $d }
+    # Parse JSON directly if it looks like an API response (H1 or YWH)
+    try {
+        $json = $body | ConvertFrom-Json
+        if ($json.scopes) {
+            foreach ($s in $json.scopes) {
+                # Clean up the scope string (e.g. apps.apple.com/fr/app/mon-espace-sant%C3%A9/id1589255019 (iOS))
+                $a = $s.scope -replace '^\*\.', '' -replace '^https?://', '' -replace '/.*$', '' -replace '\s*\(.*\)$', ''
+                if ($a -match '^[a-zA-Z0-9][-a-zA-Z0-9]*(\.[-a-zA-Z0-9]+)+$') { $domains += $a }
+            }
         }
-    }
+    } catch {
+        # Fallback to regex for unstructured text
+        $matches = [System.Text.RegularExpressions.Regex]::Matches($body, '(?:https?://)?(?:[\w-]+\.)+[\w-]{2,}(?:/[\w\-./?%&=]*)?')
+        $skip = @('google','facebook','twitter','github','linkedin','youtube','hackerone','yeswehack','bugcrowd','intigriti','cloudflare','gravatar','googleapis','gstatic','jquery','bootstrap','githubusercontent','cdn.')
+        foreach ($m in $matches) {
+            $d = $m.Value.Trim().Trim('/') -replace '^https?://', ''
+            if ($d -match '\.(png|jpg|jpeg|gif|css|js|svg|ico|woff|woff2|ttf|eot|pdf)$') { continue }
+            $d = $d -replace '/.*$', ''
+            $skipIt = $false
+            foreach ($s in $skip) { if ($d -match [regex]::Escape($s)) { $skipIt = $true; break } }
+            if ($skipIt) { continue }
+            if ($d -match '^[a-zA-Z0-9][-a-zA-Z0-9]*(\.[-a-zA-Z0-9]+)+$' -and $d -notmatch '\.(html|aspx?|php)$') {
+                $tld = $d -replace '^.*\.', ''
+                if ($tld.Length -ge 2 -and $tld -match '^[a-zA-Z]+$') { $domains += $d }
+            }
+        }
 
-    # H1 structured scope
-    $m2 = [System.Text.RegularExpressions.Regex]::Matches($body, '"asset_identifier"\s*:\s*"([^"]+)"')
-    foreach ($m in $m2) {
-        $a = $m.Groups[1].Value -replace '^\*\.', '' -replace '^https?://', '' -replace '/.*$', ''
-        if ($a -match '^[a-zA-Z0-9][-a-zA-Z0-9]*(\.[-a-zA-Z0-9]+)+$') { $domains += $a }
+        # H1 structured scope fallback
+        $m2 = [System.Text.RegularExpressions.Regex]::Matches($body, '"asset_identifier"\s*:\s*"([^"]+)"')
+        foreach ($m in $m2) {
+            $a = $m.Groups[1].Value -replace '^\*\.', '' -replace '^https?://', '' -replace '/.*$', ''
+            if ($a -match '^[a-zA-Z0-9][-a-zA-Z0-9]*(\.[-a-zA-Z0-9]+)+$') { $domains += $a }
+        }
     }
 
     # Use program name as hint
@@ -209,356 +255,68 @@ Write-Output "  [web] Default classification (all targets)"
 $classification | ConvertTo-Json | Set-Content -Path "$progDir\classification.json" -Encoding utf8
 
 # --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  
-# PHASE 2: SUBDOMAIN ENUMERATION
+# PHASE 2: ORCHESTRATE RECONNAISSANCE
 # --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  
-Write-Step "PHASE 2: Subdomain enumeration ($($targetDomains.Count) targets)"
+Write-Step "PHASE 2: Orchestrating recon.ps1 across $($targetDomains.Count) domains"
+
+$inScopeFile = "$progDir\in-scope.txt"
+$outScopeFile = "$progDir\out-of-scope.txt"
+
+# Create empty scope files if they don't exist
+if (-not (Test-Path $inScopeFile)) { New-Item -ItemType File -Path $inScopeFile -Force | Out-Null }
+if (-not (Test-Path $outScopeFile)) { New-Item -ItemType File -Path $outScopeFile -Force | Out-Null }
+
+Write-Output "  Scope files located at:"
+Write-Output "    $inScopeFile"
+Write-Output "    $outScopeFile"
+Write-Output "  (Tip: Fill these files with regexes to enforce strict scope filtering!)"
 
 $allSubdomains = @()
-$reconLog = @()
-$sourcesSummary = @{}
+$alive = @()
+$allUrls = @()
 
+$batchSize = 3
+for ($i = 0; $i -lt $targetDomains.Count; $i += $batchSize) {
+    $batch = $targetDomains[$i..($i + $batchSize - 1)] | Where-Object { $_ -and $_ -match '\.' }
+    foreach ($domain in $batch) {
+        $domain = $domain.Trim().TrimEnd('.')
+        Write-Output "`n  >>> Running recon pipeline for: $domain"
+        
+        $domainReconDir = "$reconDir\$domain"
+        $reconScript = "C:\BugBounty\scripts\recon.ps1"
+        
+        & powershell.exe -File $reconScript -Domain $domain -OutputDir $domainReconDir -InScopeFile $inScopeFile -OutOfScopeFile $outScopeFile
+    }
+}
+
+# Aggregate results back for state management and reporting
 foreach ($domain in $targetDomains) {
     $domain = $domain.Trim().TrimEnd('.')
     if ($domain -notmatch '\.') { continue }
-    Write-Output "  Target: $domain"
-
-    # subfinder
-    Write-Output "    subfinder..."
-    $outFile = "$reconDir\subfinder-$domain.txt"
-    try {
-        $out = & "$toolsDir\subfinder.exe" -d $domain -silent -o $outFile 2>&1
-        if ($LASTEXITCODE -eq 0 -and (Test-Path $outFile)) {
-            $cnt = (Get-Content $outFile | Measure-Object -Line).Lines
-            Write-Output "      -> $cnt subdomains"
-            $allSubdomains += Get-Content $outFile
-            $sourcesSummary["subfinder"] = $cnt
-        } else { Write-Output "      -> 0 or failed" }
-    } catch { Write-Output "      -> failed" }
-
-    # assetfinder
-    Write-Output "    assetfinder..."
-    $outFile = "$reconDir\assetfinder-$domain.txt"
-    try {
-        $out = & "$toolsDir\assetfinder.exe" --subs-only $domain 2>$null
-        if ($out) {
-            $out | Set-Content -Path $outFile
-            $cnt = ($out | Measure-Object -Line).Lines
-            Write-Output "      -> $cnt subdomains"
-            $allSubdomains += $out
-            $sourcesSummary["assetfinder"] = $cnt
-        } else { Write-Output "      -> 0" }
-    } catch { Write-Output "      -> failed" }
-
-    # amass (passive, 120s timeout)
-    Write-Output "    amass (passive)..."
-    $outFile = "$reconDir\amass-$domain.txt"
-    try {
-        $job = Start-Job -ScriptBlock { param($d,$o) & "C:\BugBounty\tools\amass.exe" enum -passive -d $d -silent -o $o 2>&1 } -ArgumentList $domain, $outFile
-        if ($job -and (Wait-Job $job -Timeout 120 -ErrorAction SilentlyContinue)) { Receive-Job $job -ErrorAction SilentlyContinue | Out-Null }
-        else { if ($job) { Stop-Job $job -ErrorAction SilentlyContinue; Remove-Job $job -Force -ErrorAction SilentlyContinue } }
-        Remove-Job $job -Force -ErrorAction SilentlyContinue
-        if (Test-Path $outFile) {
-            $cnt = (Get-Content $outFile | Measure-Object -Line).Lines
-            Write-Output "      -> $cnt subdomains"
-            $allSubdomains += Get-Content $outFile
-            $sourcesSummary["amass"] = $cnt
-        } else { Write-Output "      -> 0 or timeout" }
-    } catch { Write-Output "      -> failed" }
-
-    # gau (URL-based subdomain extraction, 90s timeout)
-    Write-Output "    gau..."
-    $outFile = "$reconDir\gau-$domain.txt"
-    try {
-        $job = Start-Job -ScriptBlock { param($d,$o) & "C:\BugBounty\tools\gau.exe" --subs $d 2>$null | Set-Content -Path $o } -ArgumentList $domain, $outFile
-        if ($job -and (Wait-Job $job -Timeout 90 -ErrorAction SilentlyContinue)) { Receive-Job $job -ErrorAction SilentlyContinue | Out-Null }
-        else { if ($job) { Stop-Job $job -ErrorAction SilentlyContinue; Remove-Job $job -Force -ErrorAction SilentlyContinue } }
-        Remove-Job $job -Force -ErrorAction SilentlyContinue
-        if (Test-Path $outFile) {
-            $urlDomains = (Get-Content $outFile | ForEach-Object { if ($_ -match 'https?://([^/]+)') { $Matches[1] } }) | Select-Object -Unique
-            $cnt = ($urlDomains | Measure-Object).Count
-            Write-Output "      -> $cnt subdomains in URLs"
-            $allSubdomains += $urlDomains
-            $sourcesSummary["gau"] = $cnt
-        } else { Write-Output "      -> 0" }
-    } catch { Write-Output "      -> failed" }
-
-    # waybackurls
-    Write-Output "    waybackurls..."
-    $outFile = "$reconDir\waybackurls-$domain.txt"
-    try {
-        $job = Start-Job -ScriptBlock { param($d,$o) & "C:\BugBounty\tools\waybackurls.exe" $d 2>$null | Set-Content -Path $o } -ArgumentList $domain, $outFile
-        if ($job -and (Wait-Job $job -Timeout 90 -ErrorAction SilentlyContinue)) { Receive-Job $job -ErrorAction SilentlyContinue | Out-Null }
-        else { if ($job) { Stop-Job $job -ErrorAction SilentlyContinue; Remove-Job $job -Force -ErrorAction SilentlyContinue } }
-        Remove-Job $job -Force -ErrorAction SilentlyContinue
-        if (Test-Path $outFile) {
-            $urlDomains = (Get-Content $outFile | ForEach-Object { if ($_ -match 'https?://([^/]+)') { $Matches[1] } }) | Select-Object -Unique
-            $cnt = ($urlDomains | Measure-Object).Count
-            Write-Output "      -> $cnt subdomains in URLs"
-            $allSubdomains += $urlDomains
-            $sourcesSummary["waybackurls"] = $cnt
-        } else { Write-Output "      -> 0" }
-    } catch { Write-Output "      -> failed" }
+    $domainReconDir = "$reconDir\$domain"
+    if (Test-Path "$domainReconDir\subdomains.txt") { $allSubdomains += Get-Content "$domainReconDir\subdomains.txt" }
+    if (Test-Path "$domainReconDir\alive.txt") { $alive += Get-Content "$domainReconDir\alive.txt" }
+    if (Test-Path "$domainReconDir\urls.txt") { $allUrls += Get-Content "$domainReconDir\urls.txt" }
 }
 
-# --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  
-# PHASE 3: MERGE & FILTER
-# --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  
-Write-Step "PHASE 3: Merge & deduplicate"
+$allSubdomains = $allSubdomains | Select-Object -Unique
+$alive = $alive | Select-Object -Unique
+$allUrls = $allUrls | Select-Object -Unique
 
-$allSubdomains = $allSubdomains | Where-Object { $_ -and $_.Trim() -ne '' } | ForEach-Object { $_.Trim().ToLower() } | Select-Object -Unique | Sort-Object
-$allSubdomains = $allSubdomains | Where-Object { $_ -match '^[a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)+$' }
+# Consolidate for the final report
+$mergedFile = "$reconDir\all_subdomains.txt"
+$aliveFile = "$reconDir\all_alive.txt"
+$urlsFile = "$reconDir\all_urls.txt"
 
-$mergedFile = "$reconDir\all-subdomains.txt"
 $allSubdomains | Set-Content -Path $mergedFile
-Write-Output "  $($allSubdomains.Count) unique subdomains"
-
-# --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  
-# PHASE 4: DNS RESOLUTION
-# --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  
-Write-Step "PHASE 4: DNS resolution"
-
-$resolvedFile = "$reconDir\resolved.txt"
-$resolved = @()
-try {
-    if ($allSubdomains.Count -gt 0) {
-        $out = & "$toolsDir\dnsx.exe" -l $mergedFile -silent -o $resolvedFile -a -resp 2>$null
-        $resolved = if (Test-Path $resolvedFile) { Get-Content $resolvedFile } else { @() }
-        Write-Output "  $($resolved.Count) resolved hosts"
-    } else { Write-Output "  No subdomains to resolve" }
-} catch { Write-Output "  Failed: $($_.Exception.Message)" }
-
-# --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  
-# PHASE 5: HTTP PROBING
-# --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  
-Write-Step "PHASE 5: HTTP probing"
-
-$aliveFile = "$reconDir\alive.txt"
-$alive = @()
-try {
-    $probeTargets = if ($resolved.Count -gt 0) { $resolved } else { $allSubdomains }
-    if ($probeTargets.Count -gt 0) {
-        $subOnly = $probeTargets | ForEach-Object { ($_ -split '\s+')[0] } | Select-Object -Unique | Where-Object { $_ -match '\.' }
-        if ($subOnly.Count -gt 0) {
-            $subOnly | Set-Content -Path "$reconDir\_probe_targets.txt"
-            $out = & "$toolsDir\httpx.exe" -l "$reconDir\_probe_targets.txt" -silent -o $aliveFile -threads 50 -timeout 5 2>$null
-            $alive = if (Test-Path $aliveFile) { Get-Content $aliveFile } else { @() }
-            Write-Output "  $($alive.Count) alive hosts"
-        } else { Write-Output "  No valid targets" }
-    } else { Write-Output "  No targets to probe" }
-} catch { Write-Output "  Failed: $($_.Exception.Message)" }
-
-# --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  
-# PHASE 6: URL COLLECTION
-# --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  
-Write-Step "PHASE 6: URL crawling"
-
-$urlsFile = "$reconDir\urls.txt"
-$allUrls = @()
-
-if ($alive.Count -gt 0) {
-    try {
-        Write-Output "  katana..."
-        $job = Start-Job -ScriptBlock { param($f,$o) & "C:\BugBounty\tools\katana.exe" -list $f -silent -o $o -jc -kf -d 2 -c 25 2>$null } -ArgumentList $aliveFile, "$reconDir\katana-urls.txt"
-        if ($job -and (Wait-Job $job -Timeout 120 -ErrorAction SilentlyContinue)) { Receive-Job $job -ErrorAction SilentlyContinue | Out-Null }
-        else { if ($job) { Stop-Job $job -ErrorAction SilentlyContinue; Remove-Job $job -Force -ErrorAction SilentlyContinue } }
-        Remove-Job $job -Force -ErrorAction SilentlyContinue
-        if (Test-Path "$reconDir\katana-urls.txt") { $allUrls += Get-Content "$reconDir\katana-urls.txt" }
-    } catch { Write-Output "    katana failed" }
-
-    try {
-        Write-Output "  hakrawler..."
-        $job = Start-Job -ScriptBlock { param($f,$o) Get-Content $f | & "C:\BugBounty\tools\hakrawler.exe" -depth 2 -subs -u 2>$null | Set-Content -Path $o } -ArgumentList $aliveFile, "$reconDir\hakrawler-urls.txt"
-        if ($job -and (Wait-Job $job -Timeout 120 -ErrorAction SilentlyContinue)) { Receive-Job $job -ErrorAction SilentlyContinue | Out-Null }
-        else { if ($job) { Stop-Job $job -ErrorAction SilentlyContinue; Remove-Job $job -Force -ErrorAction SilentlyContinue } }
-        Remove-Job $job -Force -ErrorAction SilentlyContinue
-        if (Test-Path "$reconDir\hakrawler-urls.txt") { $allUrls += Get-Content "$reconDir\hakrawler-urls.txt" }
-    } catch { Write-Output "    hakrawler failed" }
-}
-
-$allUrls = $allUrls | Where-Object { $_ -and $_.Trim() -ne '' } | Select-Object -Unique | Sort-Object
+$alive | Set-Content -Path $aliveFile
 $allUrls | Set-Content -Path $urlsFile
-Write-Output "  $($allUrls.Count) unique URLs"
-
-# --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  
-# PHASE 7: CLASSIFICATION-SPECIFIC SCANS
-# --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  
-
-# 7a: API scan
-if ($classification.api) {
-    Write-Step "PHASE 7a: API-specific scanning"
-    
-    # Look for API endpoints in URLs
-    $apiEndpoints = $allUrls | Where-Object { $_ -match '/api/|/v[0-9]/|/graphql|swagger|openapi' }
-    if ($apiEndpoints.Count -gt 0) {
-        $apiEndpoints | Set-Content -Path "$reconDir\api-endpoints.txt"
-        Write-Output "  Found $($apiEndpoints.Count) API-related URLs"
-    } else { Write-Output "  No API endpoints found in URLs" }
-
-    # Probe common API paths on alive hosts
-    $apiProbeFile = "$reconDir\api-probe.txt"
-    $apiPaths = @("/api", "/api/v1", "/api/v2", "/graphql", "/swagger.json", "/openapi.json", "/.well-known/openid-configuration")
-    $apiAlive = @()
-    foreach ($h in $alive) {
-        $base = $h.Trim()
-        foreach ($p in $apiPaths) {
-            try {
-                $uri = "$base$p"
-                $r = Invoke-WebRequest -Uri $uri -UseBasicParsing -TimeoutSec 5 -Method Head -ErrorAction SilentlyContinue
-                if ($r.StatusCode -lt 500) { $apiAlive += "$uri (HTTP $($r.StatusCode))" }
-            } catch {}
-        }
-    }
-    if ($apiAlive.Count -gt 0) {
-        $apiAlive | Set-Content -Path $apiProbeFile
-        Write-Output "  Found $($apiAlive.Count) live API endpoints"
-    } else { Write-Output "  No live API endpoints detected" }
-}
-
-# 7b: Cloud scan
-if ($classification.cloud) {
-    Write-Step "PHASE 7b: Cloud infrastructure scanning"
-    $cloudFile = "$reconDir\cloud-checks.txt"
-    $cloudResults = @()
-
-    # Check common bucket names
-    $bucketNames = $targetDomains | ForEach-Object { $_.Split('.')[0] }
-    $bucketNames += $slug
-    $bucketSuffixes = @("assets", "uploads", "static", "media", "backup", "config", "data", "files", "public", "dev", "prod", "staging")
-    foreach ($b in $bucketNames) {
-        foreach ($s in $bucketSuffixes) {
-            $name = "$b-$s"
-            # AWS S3
-            try {
-                $r = Invoke-WebRequest -Uri "https://$name.s3.amazonaws.com" -UseBasicParsing -TimeoutSec 5 -Method Head -ErrorAction SilentlyContinue
-                if ($r.StatusCode -ne 404) { $cloudResults += "S3 bucket accessible: $name.s3.amazonaws.com (HTTP $($r.StatusCode))" }
-            } catch {}
-            # GCP
-            try {
-                $r = Invoke-WebRequest -Uri "https://storage.googleapis.com/$name" -UseBasicParsing -TimeoutSec 5 -Method Head -ErrorAction SilentlyContinue
-                if ($r.StatusCode -ne 404) { $cloudResults += "GCP bucket accessible: storage.googleapis.com/$name (HTTP $($r.StatusCode))" }
-            } catch {}
-        }
-    }
-
-    # Subdomain takeover check (CNAME to unclaimed cloud service)
-    foreach ($s in $allSubdomains | Select-Object -First 20) {
-        try {
-            $cname = Resolve-DnsName $s -Type CNAME -ErrorAction SilentlyContinue
-            if ($cname) {
-                $target = $cname.NameHost
-                if ($target -match 's3\.amazonaws\.com|cloudfront\.net|azureedge\.net|azurewebsites\.net|storage\.googleapis\.com|herokuapp\.com|squarespace\.com|unbounce\.com|surge\.sh|github\.io|bitbucket\.io|worksites\.net|pantheonsite\.io|domains\.googledomains\.com') {
-                    $cloudResults += "Possible takeover: $s -> $target"
-                }
-            }
-        } catch {}
-    }
-
-    if ($cloudResults.Count -gt 0) {
-        $cloudResults | Set-Content -Path $cloudFile
-        Write-Output "  Found $($cloudResults.Count) cloud issues"
-    } else { Write-Output "  No cloud issues detected" }
-}
-
-# 7c: Crypto scan
-if ($classification.crypto) {
-    Write-Step "PHASE 7c: Crypto/TLS scanning"
-    $cryptoFile = "$reconDir\crypto-checks.txt"
-    $cryptoResults = @()
-
-    if (Get-Command nmap -ErrorAction SilentlyContinue) {
-        foreach ($h in $alive | Select-Object -First 10) {
-            $hostname = $h.Trim() -replace '^https?://', '' -replace '/.*$', ''
-            try {
-                $nmapOut = & nmap --script ssl-enum-ciphers -p 443 $hostname 2>$null
-                if ($nmapOut -match 'weak|DES|RC4|MD5|SHA1|export|3DES') {
-                    $cryptoResults += "${hostname}: weak ciphers detected"
-                }
-                if ($nmapOut -match 'TLSv1\.0|TLSv1\.1|SSLv') {
-                    $cryptoResults += "${hostname}: outdated TLS version"
-                }
-                $cryptoResults += "${hostname}: TLS scan completed"
-            } catch {}
-        }
-    } else { Write-Skip "nmap" }
-
-    # Check for JWT in URLs
-    $jwtEndpoints = $allUrls | Where-Object { $_ -match 'token|jwt|auth|oauth|bearer' }
-    if ($jwtEndpoints.Count -gt 0) {
-        $cryptoResults += "JWT/auth endpoints found: $($jwtEndpoints.Count) URLs"
-    }
-
-    if ($cryptoResults.Count -gt 0) {
-        $cryptoResults | Set-Content -Path $cryptoFile
-        Write-Output "  Found $($cryptoResults.Count) crypto-relevant findings"
-    } else { Write-Output "  No crypto findings" }
-}
-
-# 7d: Mobile
-if ($classification.mobile -and $foundApk) {
-    Write-Step "PHASE 7d: Mobile APK download"
-    try {
-        $apkFile = "$progDir\downloads\$(Split-Path $foundApk -Leaf)"
-        Invoke-WebRequest -Uri $foundApk -UseBasicParsing -TimeoutSec 120 -OutFile $apkFile -ErrorAction Stop
-        Write-Output "  Downloaded: $apkFile"
-        $hash = (Get-FileHash $apkFile -Algorithm SHA256).Hash
-        Write-Output "  SHA256: $hash"
-
-        if (Test-Path "$toolsDir\apktool.bat") {
-            Write-Output "  Decompiling with apktool..."
-            & "$toolsDir\apktool.bat" d $apkFile -o "$progDir\source\apktool_out" -f 2>$null
-            Write-Output "    done"
-        }
-    } catch { Write-Output "  Failed: $($_.Exception.Message)" }
-}
-
-# 7e: Source code
-if ($classification.source -and $foundRepo) {
-    Write-Step "PHASE 7e: Source code download"
-    try {
-        $sourceDir = "$progDir\source\repo"
-        if (Get-Command git -ErrorAction SilentlyContinue) {
-            & git clone --depth 1 $foundRepo $sourceDir 2>&1 | Out-Null
-            if (Test-Path $sourceDir) {
-                Write-Output "  Cloned: $foundRepo"
-                # Rust check
-                if (Test-Path "$sourceDir\Cargo.toml") {
-                    $classification.rust = $true
-                    Write-Output "  [rust] Cargo.toml found --  -   Rust project"
-                    @{rust=$true} | ConvertTo-Json | Set-Content -Path "$progDir\classification.json" -Encoding utf8
-                }
-            }
-        } else { Write-Output "  git not available" }
-    } catch { Write-Output "  Failed: $($_.Exception.Message)" }
-}
-
-# --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  
-# PHASE 8: VULNERABILITY SCANNING (nuclei)
-# --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  
-Write-Step "PHASE 8: Vulnerability scanning (nuclei)"
-
-$nucleiTemplates = "$env:USERPROFILE\nuclei-templates"
-if (-not (Test-Path $nucleiTemplates)) {
-    $nucleiTemplates = "$bbDir\wordlists\nuclei-templates"
-}
 
 $nucleiResultsFile = "$evidenceDir\nuclei-results.txt"
-$nucleiJsonFile = "$evidenceDir\nuclei-results.json"
+# We aggregate nuclei results if they exist in subdirectories
+Get-ChildItem -Path $reconDir -Recurse -Filter "nuclei-results.txt" | ForEach-Object { Get-Content $_.FullName } | Set-Content -Path $nucleiResultsFile -ErrorAction SilentlyContinue
 
-if ($alive.Count -gt 0) {
-    try {
-        Write-Output "  Scanning $($alive.Count) hosts"
-        $job = Start-Job -ScriptBlock {
-            param($f,$o,$jf,$tpl)
-            & "C:\BugBounty\tools\nuclei.exe" -l $f -severity low,medium,high,critical -o $o -json-export $jf -silent 2>&1
-        } -ArgumentList $aliveFile, $nucleiResultsFile, $nucleiJsonFile, $nucleiTemplates
-        if ($job -and (Wait-Job $job -Timeout 600 -ErrorAction SilentlyContinue)) { Receive-Job $job -ErrorAction SilentlyContinue | Out-Null }
-        else { if ($job) { Stop-Job $job -ErrorAction SilentlyContinue; Remove-Job $job -Force -ErrorAction SilentlyContinue } }
-        Remove-Job $job -Force -ErrorAction SilentlyContinue
 
-        $nucleiCount = if (Test-Path $nucleiResultsFile) { (Get-Content $nucleiResultsFile | Measure-Object -Line).Lines } else { 0 }
-        Write-Output "  Found $nucleiCount findings"
-    } catch { Write-Output "  Failed: $($_.Exception.Message)" }
-} else { Write-Output "  No alive hosts to scan" }
 
 # --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  
 # PHASE 9: REPORT GENERATION
@@ -932,3 +690,11 @@ Write-Output "    4. bbp-duplicate-guard"
 Write-Output "    5. bbp-report-writer"
 Write-Output ""
 Write-Output "=============================================="
+
+# Notify if there's actually something found
+if ($subdomainCount -gt 0 -or $assetCount -gt 0 -or $urlCount -gt 0 -or $nucleiCount -gt 0) {
+    & "C:\BugBounty\scripts\notify.ps1" -Message "Scan finished on **$slug**. Found $subdomainCount subdomains, $assetCount alive hosts, $urlCount URLs. Nuclei reported $nucleiCount findings." -Severity "Info"
+    Write-Output "`n[+] Notification sent via Discord."
+} else {
+    Write-Output "`n[-] Scan finished on $slug but 0 assets found. Skipping Discord notification to prevent spam."
+}

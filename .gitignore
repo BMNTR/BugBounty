@@ -16,6 +16,7 @@ __pycache__/
 *.zip
 *.exe
 cookies.txt
+discord_webhook.txt
 .env
 *.local
 other-repos/

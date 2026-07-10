@@ -1,13 +1,16 @@
 param(
     [Parameter(Mandatory=$true)]
     [string]$Domain,
+    [string]$OutputDir,
+    [string]$InScopeFile,
+    [string]$OutOfScopeFile,
     [switch]$Quick,
     [switch]$Nuclei,
     [switch]$Screenshots
 )
 
 $ErrorActionPreference = "Continue"
-$reconDir = "C:\BugBounty\recon\$Domain"
+$reconDir = if ($OutputDir) { $OutputDir } else { "C:\BugBounty\recon\$Domain" }
 $toolsDir = "C:\BugBounty\tools"
 $wordlistsDir = "C:\BugBounty\wordlists"
 $env:Path = "$toolsDir;$env:USERPROFILE\go\bin;$env:USERPROFILE\.cargo\bin;" + [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
@@ -44,18 +47,64 @@ if (Get-Command amass -ErrorAction SilentlyContinue) {
     $allSubs += $out
 }
 
-# Deduplicate and save
-$allSubs | Select-Object -Unique | Where-Object { $_ -match "\.$Domain$" } | Sort-Object | Set-Content -Path $subsFile
-$subCount = (Get-Content $subsFile | Measure-Object -Line).Lines
-Write-Output "  [+] Found $subCount unique subdomains"
+# Deduplicate and initial domain filter
+$allSubs = $allSubs | Select-Object -Unique | Where-Object { $_ -match "\.$Domain$|^$Domain$" } | Sort-Object
 
-# Phase 2: Alive check
-Write-Output "`n[+] Phase 2: Checking alive hosts"
+# Scope Filtering
+if ($InScopeFile -and (Test-Path $InScopeFile)) {
+    $inScopeRegexes = Get-Content $InScopeFile | Where-Object { $_ -match '\S' }
+    if ($inScopeRegexes.Count -gt 0) {
+        Write-Output "  [-] Enforcing IN-SCOPE rules..."
+        $allSubs = $allSubs | Where-Object {
+            $sub = $_
+            $match = $false
+            foreach ($regex in $inScopeRegexes) { if ($sub -match $regex) { $match = $true; break } }
+            $match
+        }
+    }
+}
+
+if ($OutOfScopeFile -and (Test-Path $OutOfScopeFile)) {
+    $outScopeRegexes = Get-Content $OutOfScopeFile | Where-Object { $_ -match '\S' }
+    if ($outScopeRegexes.Count -gt 0) {
+        Write-Output "  [-] Enforcing OUT-OF-SCOPE rules..."
+        $allSubs = $allSubs | Where-Object {
+            $sub = $_
+            $match = $false
+            foreach ($regex in $outScopeRegexes) { if ($sub -match $regex) { $match = $true; break } }
+            -not $match
+        }
+    }
+}
+
+$allSubs | Set-Content -Path $subsFile
+$subCount = if (Test-Path $subsFile) { (Get-Content $subsFile | Measure-Object -Line).Lines } else { 0 }
+Write-Output "  [+] Found $subCount unique in-scope subdomains"
+
+# Phase 2: Alive check and Port Scanning
+Write-Output "`n[+] Phase 2: Checking alive hosts and open ports"
 $aliveFile = "$reconDir\alive.txt"
-if ((Get-Command httpx -ErrorAction SilentlyContinue) -and (Test-Path $subsFile)) {
-    & httpx -l $subsFile -silent -o $aliveFile -threads 50 2>$null
+$naabuOut = "$reconDir\naabu_ports.txt"
+
+if ((Get-Command naabu -ErrorAction SilentlyContinue) -and (Test-Path $subsFile)) {
+    Write-Output "  [-] Running naabu for fast port scanning..."
+    & naabu -l $subsFile -p - -silent -o $naabuOut 2>$null
+    if (Test-Path $naabuOut) {
+        $portCount = (Get-Content $naabuOut | Measure-Object -Line).Lines
+        Write-Output "  [+] Found $portCount open ports"
+        $httpxInput = $naabuOut
+    } else {
+        $httpxInput = $subsFile
+    }
+} else {
+    $httpxInput = $subsFile
+}
+
+if ((Get-Command httpx -ErrorAction SilentlyContinue) -and (Test-Path $httpxInput)) {
+    Write-Output "  [-] Running httpx on targets..."
+    & httpx -l $httpxInput -silent -o $aliveFile -threads 50 2>$null
     $aliveCount = (Get-Content $aliveFile | Measure-Object -Line).Lines
-    Write-Output "  [+] $aliveCount alive hosts"
+    Write-Output "  [+] $aliveCount alive HTTP servers"
 }
 
 # Phase 3: URL discovery
@@ -87,15 +136,48 @@ $allUrls | Select-Object -Unique | Sort-Object | Set-Content -Path $urlsFile
 $urlCount = (Get-Content $urlsFile | Measure-Object -Line).Lines
 Write-Output "  [+] Found $urlCount unique URLs"
 
-# Phase 4: Content discovery (if not quick)
+# Phase 4: Content discovery & Secret Hunting
 if ($Quick -eq $false) {
-    Write-Output "`n[+] Phase 4: Content discovery"
-    if (Get-Command ffuf -ErrorAction SilentlyContinue) {
-        $wordlist = "$wordlistsDir\SecLists\Discovery\Web-Content\common.txt"
-        if (Test-Path $wordlist) {
-            $ffufOut = "$reconDir\ffuf_common.txt"
-            Write-Output "  [-] Running ffuf with common.txt..."
-            & ffuf -u "https://FUZZ.$Domain/" -w $wordlist -t 50 -o $ffufOut -of csv -ac -silent 2>$null
+    Write-Output "`n[+] Phase 4: Content discovery & Secret Hunting"
+    $wordlist = "C:\BugBounty\wordlists\common.txt"
+    $ffufOut = "$reconDir\ffuf_results.json"
+    
+    if ((Get-Command ffuf -ErrorAction SilentlyContinue) -and (Test-Path $wordlist) -and (Test-Path $aliveFile)) {
+        Write-Output "  [-] Running ffuf with common.txt..."
+        if ((Get-Item $aliveFile).length -gt 0) {
+            foreach ($host in (Get-Content $aliveFile)) {
+                $hostUrl = $host.TrimEnd('/')
+                & ffuf -w $wordlist -u "$hostUrl/FUZZ" -mc 200,204,301,302,307,401,403,500 -t 50 -silent >> "$reconDir\ffuf.log" 2>$null
+            }
+        }
+    }
+    
+    # Check parameters and run dalfox (DISABLED due to CPU hangs)
+    # Write-Output "  [-] Skipping dalfox to save CPU and prevent hangs..."
+
+    # Extract JS URLs and run SecretFinder
+    $jsUrls = "$reconDir\js_urls.txt"
+    $secretOut = "$reconDir\secrets.txt"
+    if (Test-Path $urlsFile) {
+        Get-Content $urlsFile | Where-Object { $_ -match '\.js$' } | Set-Content -Path $jsUrls
+        $jsCount = if (Test-Path $jsUrls) { (Get-Content $jsUrls | Measure-Object -Line).Lines } else { 0 }
+        
+        if ($jsCount -gt 0 -and (Get-Command SecretFinder -ErrorAction SilentlyContinue)) {
+            Write-Output "  [-] Running SecretFinder on $jsCount JavaScript files..."
+            & SecretFinder -i $jsUrls -o cli > $secretOut 2>$null
+        }
+    }
+
+    # dalfox for XSS on parametrized URLs
+    $paramUrls = "$reconDir\param_urls.txt"
+    $dalfoxOut = "$reconDir\dalfox_xss.txt"
+    if ((Test-Path $urlsFile) -and (Get-Command dalfox -ErrorAction SilentlyContinue)) {
+        Get-Content $urlsFile | Where-Object { $_ -match '\?' -and $_ -match '=' } | Set-Content -Path $paramUrls
+        $paramCount = if (Test-Path $paramUrls) { (Get-Content $paramUrls | Measure-Object -Line).Lines } else { 0 }
+        
+        if ($paramCount -gt 0) {
+            Write-Output "  [-] Running dalfox on $paramCount parametrized URLs..."
+            & dalfox file $paramUrls -b "https://your-oast-server.com" -o $dalfoxOut --silence 2>$null
         }
     }
 }
@@ -107,7 +189,35 @@ if ($Nuclei) {
         $nucleiOut = "$reconDir\nuclei_results.txt"
         & nuclei -l $aliveFile -t ~/nuclei-templates/ -severity low,medium,high,critical -o $nucleiOut -silent 2>$null
         Write-Output "  [+] Nuclei scan complete"
+        
+        # Check for Critical/High findings and notify
+        if (Test-Path $nucleiOut) {
+            $critCount = @(Get-Content $nucleiOut | Where-Object { $_ -match '\[critical\]' }).Count
+            $highCount = @(Get-Content $nucleiOut | Where-Object { $_ -match '\[high\]' }).Count
+            
+            if ($critCount -gt 0) {
+                & "C:\BugBounty\scripts\notify.ps1" -Message "Nuclei found $critCount CRITICAL vulnerabilities on $Domain! Check $nucleiOut" -Severity "Critical"
+            }
+            if ($highCount -gt 0) {
+                & "C:\BugBounty\scripts\notify.ps1" -Message "Nuclei found $highCount HIGH vulnerabilities on $Domain. Check $nucleiOut" -Severity "High"
+            }
+        }
     }
+}
+
+# Phase 6: Smart Evidence Capture (Screenshots & DOM)
+if ($Screenshots -and (Test-Path $aliveFile)) {
+    Write-Output "`n[+] Phase 6: Smart Evidence Capture"
+    $evidenceDir = "$reconDir\evidence"
+    New-Item -ItemType Directory -Path $evidenceDir -Force | Out-Null
+    
+    Write-Output "  [-] Running capture-evidence.js on all alive hosts..."
+    $aliveHosts = Get-Content $aliveFile
+    foreach ($h in $aliveHosts) {
+        Write-Output "      -> Capturing $h"
+        & node "C:\BugBounty\scripts\capture-evidence.js" $h $evidenceDir 2>&1 | Out-Null
+    }
+    Write-Output "  [+] Evidence saved to $evidenceDir"
 }
 
 Write-Output "`n[*] Recon complete at $(Get-Date)"

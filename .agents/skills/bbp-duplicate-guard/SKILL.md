@@ -25,6 +25,16 @@ Before spending time on validation, run:
 - OpenCVE / GHSA for library vulns
 ```
 
+### CVE / PoC Research
+Ketika nemu library/dependency tua (`package.json`, `requirements.txt`, `Gemfile`, `go.mod`):
+```
+searchsploit <library> <version>
+cve-search <library> <version>
+github: "<library>" "<version>" CVE path:.
+nvd.nist.gov: search by product + version
+```
+Cari existing PoC di GitHub (fork/clone untuk lokal test, jangan langsung run ke target). Kalo CVE valid & pakai library ≥ versi rentan di codebase, langsung lapor tanpa perlu exploit penuh — cukup bukti dependency vuln.
+
 ## Resolution
 
 | Status | Action |

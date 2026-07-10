@@ -64,7 +64,10 @@ For each live host, record:
 - upload endpoints
 - API routes (look for graphql, swagger, /api/v1)
 - interesting params (id, file, url, redirect, callback)
+- template engines (Jinja2, Twig, Freemarker, Velocity, Pug/Jade, Handlebars)
 ```
+
+**SSTI quick check** — input `{{7*7}}`, `#{7*7}`, `${{7*7}}`, `{{7*'7'}}` di params. Kalo response mengandung `49` atau `777`, kemungkinan SSTI. Lanjut detection per engine di SKILL.md §4.9.
 
 ## Output Structure
 ```
@@ -92,6 +95,7 @@ programs/<target>/
 | JWT found | manual test (SKILL.md §4.5, JWT section) |
 | OpenAPI/Swagger doc | `bbp-api-testing` |
 | auth bypass pattern (IDOR, race) | manual test (SKILL.md §4.5-4.6) |
+| SSTI candidate (`{{7*7}}` reflected) | SKILL.md §4.9 (SSTI per-engine payloads) |
 | nothing interesting after full recon | move to next target |
 
 ## Reference
