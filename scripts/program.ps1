@@ -269,7 +269,13 @@ $classification | ConvertTo-Json | Set-Content -Path "$progDir\classification.js
 # --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  
 # PHASE 2: ORCHESTRATE RECONNAISSANCE
 # --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  --  -  
-Write-Step "PHASE 2: Orchestrating recon.ps1 across $($targetDomains.Count) domains"
+Write-Step "PHASE 2: Orchestrating reconnaissance"
+
+if ($classification.windows -or $classification.binary) {
+    Write-Output "  >>> Target classified as Binary/Windows. Running binary_audit.ps1 on: $Url"
+    $binaryAuditScript = "C:\BugBounty\scripts\binary_audit.ps1"
+    & powershell.exe -File $binaryAuditScript -TargetExe $Url -OutputDir "$reconDir\binary_triage"
+}
 
 $inScopeFile = "$progDir\in-scope.txt"
 $outScopeFile = "$progDir\out-of-scope.txt"
