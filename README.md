@@ -178,3 +178,13 @@ scripts\setup-cookies.ps1
 ```
 
 Saves `cookies.txt` (gitignored). The agent auto-detects and uses it.
+
+## Disclaimer
+
+**Educational and Authorized Auditing Purposes Only**
+
+This project and all associated scripts, workflows, and tools are provided solely for educational purposes and for authorized security testing (such as formal Bug Bounty programs or authorized penetration testing). 
+
+The use of these tools against any system, network, or application without explicit permission from the owner is illegal and strictly prohibited. 
+
+The creator (BMNTR) and contributors of this repository bear no responsibility for any misuse, unauthorized access, or damage caused by the application of these tools. By using this repository, you agree that you are solely responsible for your actions and that you will comply with all applicable local, state, and international laws.
