@@ -80,6 +80,8 @@ This triggers:
 3. Deep testing based on findings
 4. Report generation
 
+### Pipeline Flowchart
+
 ```mermaid
 flowchart TD
     %% Node Definitions
