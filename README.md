@@ -24,7 +24,10 @@ Clone and install:
 ```powershell
 git clone <your-repo-url> C:\BugBounty
 cd C:\BugBounty
+# 1. Install Web/Mobile/Cloud tools
 scripts\update_all_tools.ps1
+# 2. Install Windows/Binary Reverse Engineering tools
+scripts\install_windows_tools.ps1
 ```
 
 This installs:
@@ -37,6 +40,7 @@ This installs:
 - **SCA**: trivy, grype, osv-scanner, cargo-audit
 - **Code**: semgrep, codeql
 - **Mobile**: apktool, jadx, frida, objection
+- **Windows RE**: sysinternals, x64dbg, ghidra, dnspy
 - **Other**: jq, yq, fd, fzf, bat, delta
 
 ## Wordlists

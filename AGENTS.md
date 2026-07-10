@@ -91,6 +91,7 @@ Bug fix = root cause, not symptom: a report names a symptom. Grep every caller o
      - **Crypto**: nmap TLS cipher scan, JWT endpoint detection
      - **Mobile**: APK download + apktool decompile
      - **Source**: git clone for local analysis
+     - **Windows/Binary**: identify executable files for local reverse engineering
    - Saves all raw outputs to `programs/<slug>/recon/`
    - Saves nuclei findings to `programs/<slug>/evidence/`
    - Merges and deduplicates all results
@@ -107,6 +108,8 @@ Bug fix = root cause, not symptom: a report names a symptom. Grep every caller o
   - **Cryptography** → `bbp-crypto-audit`
   - **Rust** → `bbp-rust-security-review`
   - **Cloud** → `bbp-cloud-security-audit`
+  - **Windows** → `win-reverse-basics`, `windows-privilege-escalation`, `windows-lateral-movement`
+  - **Binary** → `binary-triage`, `binary-analysis-patterns`, `ctf-reverse`, `protocol-reverse-engineering`
 - Always load: `bbp-evidence-workbench`, `bbp-report-writer`, `bbp-duplicate-guard`
 
 **Phase 3 — Execution:**
