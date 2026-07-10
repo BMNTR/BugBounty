@@ -20,6 +20,7 @@ $goTools = @(
     "github.com/hakluke/hakrawler@latest",
     "github.com/ffuf/ffuf/v2@latest",
     "github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest",
+    "github.com/projectdiscovery/interactsh/cmd/interactsh-client@latest",
     "github.com/mikefarah/yq/v4@latest"
 )
 foreach ($tool in $goTools) {
