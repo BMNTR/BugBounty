@@ -109,14 +109,18 @@ flowchart TD
         T2["API Audit"]
         T3["Mobile Audit"]
         T4["Source Audit"]
+        T5["Windows RE\n(win-reverse-basics)"]
+        T6["Binary Analysis\n(binary-triage)"]
         Base["Base Skills\n(Triage, Evidence, Report)"]
         
         C1 -->|Web| T1
         C1 -->|API| T2
         C1 -->|Mobile| T3
         C1 -->|Source| T4
+        C1 -->|Windows| T5
+        C1 -->|Binary| T6
         
-        T1 & T2 & T3 & T4 --> Base
+        T1 & T2 & T3 & T4 & T5 & T6 --> Base
     end
 
     subgraph Phase3 ["Phase 3: Execution & Validation"]
