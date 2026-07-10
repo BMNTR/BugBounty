@@ -49,8 +49,7 @@ Bug fix = root cause, not symptom: a report names a symptom. Grep every caller o
 ## Templates
 
 - `_templates/bb.toml` — scope config per program (copy & fill per target)
-- `_templates/report-hackerone.md` — H1 report template
-- `_templates/report-yeswehack.md` — YWH report template
+- `_templates/report-general.md` — General bug bounty report template (works for all platforms)
 
 ## Skill Reference
 
