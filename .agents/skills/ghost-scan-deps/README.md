@@ -207,7 +207,7 @@ To integrate into your CI/CD pipeline:
 Example GitHub Actions:
 ```yaml
 - name: Run SCA Scan
-  run: claude-code /ghost-scan-deps
+  run: agent-cli /ghost-scan-deps
 
 - name: Check for HIGH findings
   run: |

@@ -22,8 +22,8 @@ run_one() {
 $extra_inputs"
   fi
 
-  unset CLAUDECODE
-  claude -p "Read and follow $skill_dir/prompts/$prompt.
+  unset AI_CLI
+  agent-cli -p "Read and follow $skill_dir/prompts/$prompt.
 
 ## Inputs
 $inputs" \

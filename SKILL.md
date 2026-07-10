@@ -359,7 +359,7 @@ nuclei -l live_hosts.txt -t cves/ -o nuclei_cves.txt
 nuclei -u https://target.com -t exposures/configs/ -t exposures/tokens/
 
 # Generate custom nuclei template from CVE
-# Use Claude: "Create a nuclei template for CVE-2025-1234 affecting Jenkins < 2.400"
+# Use an AI Agent: "Create a nuclei template for CVE-2025-1234 affecting Jenkins < 2.400"
 ```
 
 #### Subdomain Takeover
@@ -2840,7 +2840,7 @@ LLM10: Model Theft
 ```bash
 # Install from BApp Store
 # Configure API key:
-# Extender -> BurpGPT -> Set OpenAI/Claude API key
+# Extender -> BurpGPT -> Set AI Provider API key
 
 # Use cases:
 # - Automatically classify findings
@@ -2859,7 +2859,7 @@ LLM10: Model Theft
 # - Auto-categorize JS files for endpoints
 ```
 
-**Claude for Nuclei Template Generation:**
+**AI Agent for Nuclei Template Generation:**
 ```text
 Prompt format:
 "Create a nuclei template for CVE-2025-XXXX affecting ProductName < version 2.3.

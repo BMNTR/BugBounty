@@ -1,6 +1,6 @@
 # Security Auditor
 
-> A Claude Code skill for security audits and vulnerability assessment.
+> An AI agent skill for security audits and vulnerability assessment.
 
 ## Installation
 
