@@ -51,26 +51,27 @@ git clone https://github.com/danielmiessler/SecLists
 git clone https://github.com/swisskyrepo/PayloadsAllTheThings
 ```
 
-## Agent Setup (opencode)
+## Agent Setup (AI Assistant)
 
-This repo is designed to work with [opencode](https://opencode.ai) CLI.
+This repository is designed to act as the "brain" and toolkit for **any Agentic AI assistant** (like Antigravity, Claude Code, Aider, or Cursor).
+
+You can use the AI CLI or editor of your choice. For example:
 
 ```powershell
-# install opencode
+# Example using Claude Code
 npm install -g @anthropic-ai/claude-code
-# or if using opencode:
-npm install -g opencode-cli
-```
-
-Then open the repo:
-
-```powershell
 cd C:\BugBounty
-opencode
-# or: claude
+claude
+
+# Example using Aider
+pip install aider-chat
+cd C:\BugBounty
+aider
+
+# Or simply open this folder in Cursor / Gemini / Antigravity workspace
 ```
 
-The agent reads `AGENTS.md` and `SKILL.md` for full workflow instructions.
+As long as the AI assistant is opened inside `C:\BugBounty`, it will automatically read `AGENTS.md` and `SKILL.md` to inherit the full Bug Bounty workflow instructions.
 
 ## Workflow
 
