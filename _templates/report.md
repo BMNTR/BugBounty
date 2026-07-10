@@ -4,7 +4,6 @@
 - **Vulnerability Class:** {{VULN_CLASS}}
 - **Target Asset:** {{ASSET_URL}}
 - **Affected Component:** {{COMPONENT}}
-- **Severity:** {{SEVERITY}} (CVSS: {{CVSS_SCORE}})
 
 ## Description
 {{VULNERABILITY_DESCRIPTION}}
