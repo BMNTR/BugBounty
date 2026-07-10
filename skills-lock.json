@@ -7,11 +7,35 @@
       "skillPath": "skills/agent-browser/SKILL.md",
       "computedHash": "ecc7641aea05f85ca3b11e7759d32aaf52fe05946ab4b63739c7bf78a41237a2"
     },
+    "binary-analysis-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/reverse-engineering/skills/binary-analysis-patterns/SKILL.md",
+      "computedHash": "6c3a0ee7e2ed9b28b07d7483cf931d3dc77b45cce7e4ac896e7a532d9db9fdaf"
+    },
+    "binary-hardening": {
+      "source": "mohitmishra786/low-level-dev-skills",
+      "sourceType": "github",
+      "skillPath": "skills/runtimes/binary-hardening/SKILL.md",
+      "computedHash": "ad6af45b8a9ee8575ff0100d63b6da464ea429227997b678fcace8dccd31521f"
+    },
+    "binary-triage": {
+      "source": "cyberkaida/reverse-engineering-assistant",
+      "sourceType": "github",
+      "skillPath": "ReVa/skills/binary-triage/SKILL.md",
+      "computedHash": "030a57e11e4eb6fb494e95fad6f35b170546a1469d906b3cdd8ecbd31429a600"
+    },
     "code-security": {
       "source": "semgrep/skills",
       "sourceType": "github",
       "skillPath": "skills/code-security/SKILL.md",
       "computedHash": "a4b931c20f8ebe7d4de8a4a91df449684516f1af129b773c34ed0e02b294a622"
+    },
+    "ctf-reverse": {
+      "source": "ljagiello/ctf-skills",
+      "sourceType": "github",
+      "skillPath": "ctf-reverse/SKILL.md",
+      "computedHash": "66c526e7616947fe0ee614c04bc0ef4c5068cf8a670cb35884622898186bbe65"
     },
     "find-skills": {
       "source": "vercel-labs/skills",
@@ -61,6 +85,18 @@
       "skillPath": "plugins/ghost/skills/validate/SKILL.md",
       "computedHash": "31d7b5aa6926fc7035146c2ae5515e58c1e9a1b2363207dea6090d05d3916429"
     },
+    "protocol-reverse-engineering": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/reverse-engineering/skills/protocol-reverse-engineering/SKILL.md",
+      "computedHash": "a3942d519710b59b270f09829f2be91697ecc55206ee26bd1e233d00c29bff37"
+    },
+    "rev-frida": {
+      "source": "p4nda0s/reverse-skills",
+      "sourceType": "github",
+      "skillPath": "skills/rev-frida/SKILL.md",
+      "computedHash": "92a162b05eb75b35def5448c6095f258abe48ed68a8bd33b69ac807ee6dc2327"
+    },
     "security-auditor": {
       "source": "charon-fan/agent-playbook",
       "sourceType": "github",
@@ -90,6 +126,24 @@
       "sourceType": "github",
       "skillPath": "skills/vulnhunter/SKILL.md",
       "computedHash": "64ed06b4baeda8b3b90e2b77cf722c9c088bd4cab1111b74c148498272399ee6"
+    },
+    "windows-av-evasion": {
+      "source": "yaklang/hack-skills",
+      "sourceType": "github",
+      "skillPath": "skills/windows-av-evasion/SKILL.md",
+      "computedHash": "08e9936b6b637902e789b6d54866283bf89c6ae79f999e8d750e40fab4f50814"
+    },
+    "windows-lateral-movement": {
+      "source": "yaklang/hack-skills",
+      "sourceType": "github",
+      "skillPath": "skills/windows-lateral-movement/SKILL.md",
+      "computedHash": "e4e5030b2ec0e14ab1829f9676599c77b28ab8980cf536b81b95c17eca8cfc5e"
+    },
+    "windows-privilege-escalation": {
+      "source": "yaklang/hack-skills",
+      "sourceType": "github",
+      "skillPath": "skills/windows-privilege-escalation/SKILL.md",
+      "computedHash": "8081dfc488930146bd77f397d286d1b82c79770b6c12759d7a16efeb241d66ac"
     }
   }
 }
