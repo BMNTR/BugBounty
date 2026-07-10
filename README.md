@@ -80,6 +80,68 @@ This triggers:
 3. Deep testing based on findings
 4. Report generation
 
+```mermaid
+flowchart TD
+    %% Styling definitions
+    classDef startend fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff,font-weight:bold
+    classDef phase fill:#ecf0f1,stroke:#bdc3c7,stroke-width:2px,color:#2c3e50,font-weight:bold
+    classDef action fill:#3498db,stroke:#2980b9,stroke-width:1px,color:#fff
+    classDef tool fill:#9b59b6,stroke:#8e44ad,stroke-width:1px,color:#fff
+    classDef storage fill:#f1c40f,stroke:#f39c12,stroke-width:2px,color:#000
+
+    %% Main flow
+    Start(["🚀 Start: /program <url>"]):::startend --> Phase1
+
+    %% Phase 1: Recon
+    subgraph Phase1 [Phase 1: Autonomous Recon]
+        direction TB
+        R1["Passive Recon<br>(Google/GitHub Dorking, Shodan)"]:::action --> R2["Subdomain Enum<br>(subfinder, assetfinder)"]:::action
+        R2 --> R3["DNS & Port Scan<br>(dnsx, naabu)"]:::action
+        R3 --> R4["HTTP Probing<br>(httpx)"]:::action
+        R4 --> R5["URL History & Crawling<br>(gau, waybackurls, katana)"]:::action
+        R5 --> R6["Vuln Scanning<br>(nuclei, dalfox)"]:::action
+        
+        R6 --> DB1[("📁 programs/&lt;slug&gt;/recon/")]:::storage
+        R6 --> DB2[("📁 programs/&lt;slug&gt;/evidence/")]:::storage
+    end
+
+    Phase1 --> Phase2
+
+    %% Phase 2: Classification
+    subgraph Phase2 [Phase 2: Target Classification & Skill Loading]
+        direction TB
+        C1{"Target Type?"}:::phase
+        C1 -- Web --> T1["Load bbp-web-recon"]:::tool
+        C1 -- API --> T2["Load bbp-api-audit"]:::tool
+        C1 -- Mobile --> T3["Load bbp-android-apk-audit"]:::tool
+        C1 -- Source --> T4["Load bbp-source-code-audit"]:::tool
+        
+        T1 & T2 & T3 & T4 --> C2["Load Base Skills<br>(triage, evidence, report, duplicate)"]:::tool
+    end
+
+    Phase2 --> Phase3
+
+    %% Phase 3: Execution
+    subgraph Phase3 [Phase 3: Execution & Validation]
+        direction TB
+        E1["Run Specialized Scripts<br>(recon.ps1, etc.)"]:::action --> E2["Deep Manual Testing & Validation"]:::action
+        E2 --> E3["Exploitation & PoC Creation"]:::action
+        E3 --> DB3[("📝 programs/&lt;slug&gt;/findings.md")]:::storage
+    end
+
+    Phase3 --> Phase4
+
+    %% Phase 4: Reporting
+    subgraph Phase4 [Phase 4: Report Generation]
+        direction TB
+        Rep1["Load bbp-report-writer"]:::tool --> Rep2["Generate Report"]:::action
+        Rep2 --> Rep3["Attach Evidence<br>(Screenshots, PoC)"]:::action
+        Rep3 --> DB4[("📄 programs/&lt;slug&gt;/final_report.md")]:::storage
+    end
+
+    Phase4 --> Finish(["🎉 Report Submitted!"]):::startend
+```
+
 ## Structure
 
 ```
