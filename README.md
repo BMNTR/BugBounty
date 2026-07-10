@@ -22,7 +22,7 @@ Windows only: install [Go](https://go.dev/dl/), [Python](https://www.python.org/
 Clone and install:
 
 ```powershell
-git clone <your-repo-url> C:\BugBounty
+git clone https://github.com/BMNTR/BugBounty.git C:\BugBounty
 cd C:\BugBounty
 # 1. Install Web/Mobile/Cloud tools
 scripts\update_all_tools.ps1
