@@ -72,13 +72,15 @@ Write-Step "PHASE 1: Fetching program page & classifying"
 $body = ""
 $domains = @()
 $classification = @{
-    web    = $false
-    api    = $false
-    mobile = $false
-    source = $false
-    cloud  = $false
-    crypto = $false
-    rust   = $false
+    web     = $false
+    api     = $false
+    mobile  = $false
+    source  = $false
+    cloud   = $false
+    crypto  = $false
+    rust    = $false
+    windows = $false
+    binary  = $false
 }
 $foundApk = $null
 $foundRepo = $null
@@ -245,6 +247,16 @@ if ($body) {
         $classification.rust = $true
         Write-Output "  [rust] Rust patterns detected"
     }
+
+    # Windows / Binary detection
+    if ($bodyLower -match 'windows|\.exe|\.msi|desktop app|win32|win64') {
+        $classification.windows = $true
+        Write-Output "  [windows] Windows desktop patterns detected"
+    }
+    if ($bodyLower -match 'binary|compiled|reverse engineering|\.bin|\.elf|\.dll') {
+        $classification.binary = $true
+        Write-Output "  [binary] Binary application patterns detected"
+    }
 }
 
 # Default: treat as web target
@@ -370,6 +382,8 @@ if ($classification.source) { $classList += "source" }
 if ($classification.cloud) { $classList += "cloud" }
 if ($classification.crypto) { $classList += "crypto" }
 if ($classification.rust) { $classList += "rust" }
+if ($classification.windows) { $classList += "windows" }
+if ($classification.binary) { $classList += "binary" }
 
 # --  -  --  -   attack_surface.md --  -  --  -  
 $assetRows = @()
@@ -390,7 +404,7 @@ $skillsPipeline = @()
 $skillsPipeline += "Load these skills based on classification:"
 $skillsPipeline += ""
 $skillsPipeline += "1. Load bbp-program-triage - validate target and policy"
-$skillsPipeline += "2. Load bbp-web-recon --  -   web recon (default)" + $(if ($classification.api) { ", bbp-api-audit --  -   API testing" } else { "" }) + $(if ($classification.mobile) { ", bbp-android-apk-audit --  -   APK audit" } else { "" }) + $(if ($classification.source) { ", bbp-source-code-audit --  -   code review" } else { "" }) + $(if ($classification.cloud) { ", bbp-cloud-security-audit --  -   cloud infra" } else { "" }) + $(if ($classification.crypto) { ", bbp-crypto-audit --  -   crypto review" } else { "" }) + $(if ($classification.rust) { ", bbp-rust-security-review --  -   Rust audit" } else { "" })
+$skillsPipeline += "2. Load bbp-web-recon --  -   web recon (default)" + $(if ($classification.api) { ", bbp-api-audit --  -   API testing" } else { "" }) + $(if ($classification.mobile) { ", bbp-android-apk-audit --  -   APK audit" } else { "" }) + $(if ($classification.source) { ", bbp-source-code-audit --  -   code review" } else { "" }) + $(if ($classification.cloud) { ", bbp-cloud-security-audit --  -   cloud infra" } else { "" }) + $(if ($classification.crypto) { ", bbp-crypto-audit --  -   crypto review" } else { "" }) + $(if ($classification.rust) { ", bbp-rust-security-review --  -   Rust audit" } else { "" }) + $(if ($classification.windows) { ", win-reverse-basics --  -   Windows RE" } else { "" }) + $(if ($classification.binary) { ", binary-triage --  -   Binary Analysis" } else { "" })
 $skillsPipeline += "3. Load bbp-evidence-workbench --  -   organize findings"
 $skillsPipeline += "4. Load bbp-report-writer --  -   final report"
 $skillsPipeline += "5. Before deep-dive, load bbp-duplicate-guard"
@@ -469,6 +483,7 @@ $(if ($classification.cloud -and (Test-Path "$reconDir\cloud-checks.txt")) { "- 
 $(if ($classification.crypto -and (Test-Path "$reconDir\crypto-checks.txt")) { "- Crypto/TLS checks: $reconDir\crypto-checks.txt`n" } else { "" })
 $(if ($classification.mobile) { "- APK: $progDir\downloads\`n- Source: $progDir\source\apktool_out`n" } else { "" })
 $(if ($classification.source -and $foundRepo) { "- Repo: $foundRepo`n- Source: $progDir\source\repo`n" } else { "" })
+$(if ($classification.windows -or $classification.binary) { "- Target Binaries: $progDir\downloads\`n" } else { "" })
 
 ## Next Steps
 
@@ -536,6 +551,16 @@ $(if ($classification.source) { @"
 - See bbp-source-code-audit skill for static review
 
 "@ } else { "" })
+$(if ($classification.windows) { @"
+**Windows-specific:**
+- See win-reverse-basics or windows-privilege-escalation skills for local assessment
+
+"@ } else { "" })
+$(if ($classification.binary) { @"
+**Binary-specific:**
+- See binary-triage and ctf-reverse skills for reverse engineering
+
+"@ } else { "" })
 ## Findings Summary
 
 $nucleisummary
@@ -581,7 +606,9 @@ $(if ($classification.cloud) { "   - Cloud: bbp-cloud-security-audit (bucket pol
 $(if ($classification.crypto) { "   - Crypto: bbp-crypto-audit (algorithm, key mgmt, TLS)`n" } else { "" }) +
 $(if ($classification.mobile) { "   - Mobile: bbp-android-apk-audit (exported components, WebViews)`n" } else { "" }) +
 $(if ($classification.source) { "   - Source: bbp-source-code-audit (rg patterns, semgrep)`n" } else { "" }) +
-$(if ($classification.rust) { "   - Rust: bbp-rust-security-review (unsafe, cargo audit)`n" } else { "" }) + @"
+$(if ($classification.rust) { "   - Rust: bbp-rust-security-review (unsafe, cargo audit)`n" } else { "" }) +
+$(if ($classification.windows) { "   - Windows: win-reverse-basics, windows-privilege-escalation`n" } else { "" }) +
+$(if ($classification.binary) { "   - Binary: binary-triage, ctf-reverse, protocol-reverse-engineering`n" } else { "" }) + @"
 4. Organize evidence with bbp-evidence-workbench.
 5. Generate final report with bbp-report-writer.
 "@ } else {
@@ -673,6 +700,7 @@ if ($classification.cloud) { Write-Output "    Cloud checks:   $(if (Test-Path "
 if ($classification.crypto) { Write-Output "    Crypto checks:  $(if (Test-Path "$reconDir\crypto-checks.txt") { (Get-Content "$reconDir\crypto-checks.txt" | Measure-Object -Line).Lines } else { 0 })" }
 if ($classification.mobile) { Write-Output "    APK downloaded: $(if (Test-Path "$progDir\downloads\*.apk") { 'yes' } else { 'no' })" }
 if ($classification.source) { Write-Output "    Repo cloned:    $(if (Test-Path "$progDir\source\repo") { 'yes' } else { 'no' })" }
+if ($classification.windows -or $classification.binary) { Write-Output "    Binary downloaded: $(if (Test-Path "$progDir\downloads\*.exe") { 'yes' } else { 'no' })" }
 Write-Output ""
 Write-Output "  Reports:"
 Write-Output "    attack_surface.md"
@@ -685,6 +713,8 @@ Write-Output "    2. $(if ($classification.api) { 'bbp-api-audit' } elseif ($cla
 if ($classification.cloud) { Write-Output "       bbp-cloud-security-audit" }
 if ($classification.crypto) { Write-Output "       bbp-crypto-audit" }
 if ($classification.rust) { Write-Output "       bbp-rust-security-review" }
+if ($classification.windows) { Write-Output "       win-reverse-basics, windows-privilege-escalation" }
+if ($classification.binary) { Write-Output "       binary-triage, ctf-reverse" }
 Write-Output "    3. bbp-evidence-workbench"
 Write-Output "    4. bbp-duplicate-guard"
 Write-Output "    5. bbp-report-writer"
