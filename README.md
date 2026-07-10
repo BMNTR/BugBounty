@@ -53,22 +53,14 @@ git clone https://github.com/swisskyrepo/PayloadsAllTheThings
 
 ## Agent Setup (AI Assistant)
 
-This repository is designed to act as the "brain" and toolkit for **any Agentic AI assistant** (like Antigravity, Claude Code, Aider, or Cursor).
+This repository is designed to act as the "brain" and toolkit for **any Agentic AI assistant**.
 
-You can use the AI CLI or editor of your choice. For example:
+You can use the AI CLI or editor of your choice. Simply point your AI assistant to this repository folder:
 
 ```powershell
-# Example using Claude Code
-npm install -g @anthropic-ai/claude-code
 cd C:\BugBounty
-claude
-
-# Example using Aider
-pip install aider-chat
-cd C:\BugBounty
-aider
-
-# Or simply open this folder in Cursor / Gemini / Antigravity workspace
+# Launch your preferred AI CLI here
+# Or open this folder in your AI-powered code editor
 ```
 
 As long as the AI assistant is opened inside `C:\BugBounty`, it will automatically read `AGENTS.md` and `SKILL.md` to inherit the full Bug Bounty workflow instructions.
