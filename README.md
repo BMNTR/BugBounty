@@ -102,7 +102,7 @@ C:\BugBounty\
 
 ## Private Programs
 
-Login to HackerOne/YesWeHack, then:
+Login to your target platform (HackerOne, YesWeHack, Bugcrowd, etc.) in your browser, then:
 
 ```powershell
 scripts\setup-cookies.ps1
