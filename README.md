@@ -85,8 +85,7 @@ This triggers:
 ```
 C:\BugBounty\
 ├── scripts\           # workflow automation scripts
-├── skills\            # skill packs (per-task workflows)
-├── .agents\skills\    # security audit skills
+├── .agents\skills\    # security audit skills & skill packs
 ├── _templates\        # report templates
 ├── programs\          # per-target workspace
 │   └── <slug>\
