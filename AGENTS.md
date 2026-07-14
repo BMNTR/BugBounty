@@ -1,37 +1,5 @@
 # BugBounty Agent Rules
 
-## Ponytail — Lazy Senior Dev Mode
-
-Ponytail (`@dietrichgebert/ponytail`) is active. You are a lazy senior developer. Lazy means efficient, not careless. The best code is the code never written.
-
-Before writing any code, stop at the first rung that holds:
-
-1. Does this need to be built at all? (YAGNI)
-2. Does it already exist in this codebase? Reuse the helper, util, or pattern that's already here, don't re-write it.
-3. Does the standard library already do this? Use it.
-4. Does a native platform feature cover it? Use it.
-5. Does an already-installed dependency solve it? Use it.
-6. Can this be one line? Make it one line.
-7. Only then: write the minimum code that works.
-
-The ladder runs after you understand the problem, not instead of it: read the task and the code it touches, trace the real flow end to end, then climb.
-
-Bug fix = root cause, not symptom: a report names a symptom. Grep every caller of the function you touch and fix the shared function once — one guard there is a smaller diff than one per caller, and patching only the path the ticket names leaves a sibling caller still broken.
-
-**Rules:**
-- No abstractions that weren't explicitly requested.
-- No new dependency if it can be avoided.
-- No boilerplate nobody asked for.
-- Deletion over addition. Boring over clever. Fewest files possible.
-- Shortest working diff wins, but only once you understand the problem. The smallest change in the wrong place isn't lazy, it's a second bug.
-- Question complex requests: "Do you actually need X, or does Y cover it?"
-- Pick the edge-case-correct option when two stdlib approaches are the same size. Lazy means less code, not the flimsier algorithm.
-- Mark intentional simplifications with a `ponytail:` comment. If the shortcut has a known ceiling (global lock, O(n²) scan, naive heuristic), the comment names the ceiling and the upgrade path.
-
-**Not lazy about:** understanding the problem (read it fully and trace the real flow before picking a rung, a small diff you don't understand is just laziness dressed up as efficiency), input validation at trust boundaries, error handling that prevents data loss, security, accessibility, anything explicitly requested. Lazy code without its check is unfinished: non-trivial logic (a branch, a loop, a parser, a money/security path) leaves ONE runnable check behind — the smallest thing that fails if the logic breaks: an assert-based `demo()`/`__main__` self-check or one small `test_*.py`. No frameworks, no fixtures, no per-function suites unless asked. Trivial one-liners need no test.
-
----
-
 ## Bug Bounty Rules
 
 - **STRICT SCOPE ENFORCEMENT**: Work ONLY on explicitly in-scope assets defined in the program's scope config. You MUST verify every domain, IP, or endpoint against the IN-SCOPE list before running any tools. If it is not explicitly in-scope, or if it matches an OUT-OF-SCOPE rule, DO NOT touch it.
@@ -41,6 +9,8 @@ Bug fix = root cause, not symptom: a report names a symptom. Grep every caller o
 - Prefer local reproduction, source review, release binary inspection, unit tests, and non-destructive PoCs.
 - Before reporting, run duplicate checks and confirm evidence exists.
 - Do not report exposed public client-side keys by themselves (Sentry DSN, Firebase, Google Maps, analytics, telemetry, SDK keys). Reportable only when proven additional impact exists.
+- **AUTOMATED EVIDENCE CAPTURE & VISIBLE POC**: To ensure undeniable visual proof without waiting for manual reproduction, whenever an agent executes a **Final PoC Validation**, it MUST save the raw HTTP request/response to a `.txt` file in `evidence/`. Because some AI agents (like Antigravity) run in isolated background services and CANNOT spawn windows on the interactive desktop, the agent MUST provide the exact command in a code block for the user to copy-paste into their own terminal, or for the user to pass to an interactive agent (like OpenCode). The command MUST use the array syntax: `Start-Process powershell.exe -ArgumentList '-ExecutionPolicy', 'Bypass', '-NoExit', '-File', 'C:\path\to\script.ps1'`.
+- **NO EMOJIS IN SCRIPTS**: NEVER use emojis (e.g., 🚀, 📸) in any generated `.ps1`, `.bat`, or source code files. Windows PowerShell 5.1 and certain text encodings will fail to parse them, causing silent crashes or `ParserError`. Use standard ASCII (e.g., `[!]`, `[+]`) for emphasis.
 - Run bug bounty work visibly whenever practical. Use visible terminal windows for installs, cloning, builds, tests, PoCs, APK decoding, dependency setup, long recon, and final validation. Background commands for quick file reads, `rg` searches, small bookkeeping edits.
 - Use HackerOne format for HackerOne reports.
 - Use YesWeHack `DESCRIPTION / EXPLOITATION / POC / RISK / REMEDIATION` format for YesWeHack reports.
@@ -54,84 +24,21 @@ Bug fix = root cause, not symptom: a report names a symptom. Grep every caller o
 ## Skill Reference
 
 - Base skill: `C:\BugBounty\SKILL.md` — encyclopedia (26 sections, 95KB, commands & workflows)
-- Skills: `C:\BugBounty\.agents\skills\` — 28 files, load via `/skill <name>`:
+- Skills: `C:\BugBounty\.agents\skills\` — 33 files, load via `/skill <name>`:
   - **bbp-ops** — `bbp-program-triage`, `bbp-duplicate-guard`, `bbp-evidence-workbench`, `bbp-report-writer`
   - **bbp-recon** — `bbp-web-recon`, `bbp-subdomain-takeover`, `bbp-cloud-security-audit`
   - **bbp-web-attacks** — `bbp-xss-hunter`, `bbp-sqli-hunter`, `bbp-ssrf-hunter`, `bbp-osci-hunter`, `bbp-xxe-hunter`, `bbp-prototype-pollution`, `bbp-cache-poisoning`, `bbp-file-upload-lfi`
   - **bbp-web-security** — `bbp-api-audit`, `bbp-auth-bypass`, `bbp-graphql-audit`, `bbp-business-logic`, `bbp-waf-bypass`
   - **bbp-mobile** — `bbp-android-apk-audit`, `bbp-mobile-reverse-engine`, `bbp-mobile-dynamic-analysis`, `bbp-mobile-ipc-exploit`, `bbp-mobile-local-storage`
   - **bbp-source-review** — `bbp-source-code-audit`, `bbp-rust-security-review`, `bbp-crypto-audit`
+  - **bbp-reference** — `bbp-edoverflow-cheatsheet`, `bbp-payloads-all-the-things`, `bbp-hackerone-disclosures`, `bbp-nuclei-templates`, `bbp-cve-poc-db`
 
 ## Slash Commands
 
 ### `/program <url> [name]`
 
-**Program workflow orchestrator.** Call this first when starting a new target.
-
-**Phase 1 — Autonomous Recon:**
-1. Run `.\scripts\program.ps1 -Url <url>` which:
-   - Fetches the program page and extracts scope domains
-   - Classifies target type (web, API, mobile, source, cloud, crypto, rust)
-   - Runs Passive Recon first (Google dorking, GitHub dorking, Shodan, Wayback)
-   - Runs full recon pipeline automatically:
-     - subfinder, assetfinder, amass (passive) for subdomain enumeration
-     - **SCOPE FILTERING**: ALL discovered subdomains MUST be filtered against the in-scope and out-of-scope rules before proceeding.
-     - dnsx for DNS resolution (on filtered domains)
-     - naabu for fast port scanning (feed open ports to nmap)
-     - httpx for HTTP probing (find alive servers on open ports)
-     - gau, waybackurls for URL history (ONLY on alive HTTP hosts)
-     - SecretFinder / subjs on JS files to extract leaked credentials
-     - katana, hakrawler for active web crawling
-     - arjun, ffuf for hidden parameter and content discovery
-     - dalfox for automated XSS scanning on discovered parameters (use interactsh-client for blind XSS)
-     - nuclei for vulnerability scanning (use interactsh-client for OAST/Blind bugs)
-   - Runs classification-specific scans:
-     - **API**: endpoint discovery from URL corpus, live path probing
-     - **Cloud**: S3/GCP bucket enumeration, DNS CNAME takeover checks
-     - **Crypto**: nmap TLS cipher scan, JWT endpoint detection
-     - **Mobile**: APK download + apktool decompile
-     - **Source**: git clone for local analysis
-     - **Windows/Binary**: identify executable files for local reverse engineering
-   - Saves all raw outputs to `programs/<slug>/recon/`
-   - Saves nuclei findings to `programs/<slug>/evidence/`
-   - Merges and deduplicates all results
-   - Populates `attack_surface.md`, `findings.md`, `final_report.md` with real data
-   - Writes classification to `classification.json` for skill routing
-
-**Phase 2 — Skill loading:**
-- Load `bbp-program-triage` to validate the target
-- Load skills matching the program classification:
-  - **Web** → `bbp-web-recon`
-  - **API** → `bbp-api-audit`
-  - **Mobile** → `bbp-android-apk-audit`
-  - **Source Code** → `bbp-source-code-audit`
-  - **Cryptography** → `bbp-crypto-audit`
-  - **Rust** → `bbp-rust-security-review`
-  - **Cloud** → `bbp-cloud-security-audit`
-  - **Windows** → `win-reverse-basics`, `windows-privilege-escalation`, `windows-lateral-movement`
-  - **Binary** → `binary-triage`, `binary-analysis-patterns`, `ctf-reverse`, `protocol-reverse-engineering`
-- Always load: `bbp-evidence-workbench`, `bbp-report-writer`, `bbp-duplicate-guard`
-
-**Phase 3 — Execution:**
-- Run the selected skills against the program workspace
-- Use `.\scripts\recon.ps1 -Domain <domain>` for web targets
-- Use `.\scripts\source_audit.ps1 -Path <path>` for source targets
-- Use `.\scripts\secrets_scan.ps1 -Path <path>` for secrets scanning
-- Use `.\scripts\mobile_audit.ps1 -ApkPath <path>` for mobile APK analysis
-- Use `.\scripts\dependency_audit.ps1 -Path <path>` for dependency vuln scanning
-- Document every finding in `findings.md`
-- Continue until all high-risk components have been reviewed
-
-**Phase 4 — Report:**
-- Load `bbp-report-writer` to generate final report
-- Save to `programs/<slug>/final_report.md`
-- Attach evidence from `programs/<slug>/evidence/`
-
-**Example:**
-```
-/program https://hackerone.com/example-program
-/program https://yeswehack.com/programs/example-program my-program
-```
+**Program workflow orchestrator.** Memicu otomatisasi recon dan triage awal.
+**Aturan Agen:** Jika user mengetik perintah ini, SEGERA panggil skill `bbp-program-orchestrator` dan ikuti instruksi di dalamnya tanpa bertanya lagi.
 
 ## Scan Loop
 
@@ -256,6 +163,8 @@ The script checks for `cookies.txt` in the project root. If present, it sends th
 4. **Cek response body** — 200 OK bisa jadi SPA catch-all atau WAF block page, bukan endpoint beneran
 5. **Prioritas manual RCE** — automated scan buat discovery, manual exploitation buat validasi final
 6. **Timestamp file** — CreationTime/LastWriteTime bisa jadi bukti forensik kalo ada dispute
+7. **Cek program exclusion list sebelum report** — TikTok exclude "Missing anti-clickjacking mechanisms" dan "Software version disclosure / Banner identification / Descriptive error messages or headers". Clickjacking mesti ada PoC sensitive action (state-changing), bukan cuma framing. Info disclosure headers hampir selalu ditolak program besar. Cek policy dulu biar gak buang waktu.
+8. **H1 clickjacking = low/medium only if sensitive action** — Framing aja tanpa sensitive action (post/delete/edit) gak cukup. Program besar biasanya require demonstrable impact.
 
 ## External References
 
