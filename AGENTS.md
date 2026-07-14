@@ -23,22 +23,26 @@
 
 ## Skill Reference
 
-- Base skill: `C:\BugBounty\SKILL.md` — encyclopedia (26 sections, 95KB, commands & workflows)
-- Skills: `C:\BugBounty\.agents\skills\` — 33 files, load via `/skill <name>`:
-  - **bbp-ops** — `bbp-program-triage`, `bbp-duplicate-guard`, `bbp-evidence-workbench`, `bbp-report-writer`
+- Base skill: `C:\BugBounty\SKILL.md` — encyclopedia (37 sections, 95KB, commands & workflows)
+- Skills: `C:\BugBounty\.agents\skills\` — 57 skills, load via `/skill <name>`:
+  - **bbp-ops** — `bbp-program-orchestrator`, `bbp-program-triage`, `bbp-duplicate-guard`, `bbp-evidence-workbench`, `bbp-report-writer`
   - **bbp-recon** — `bbp-web-recon`, `bbp-subdomain-takeover`, `bbp-cloud-security-audit`
-  - **bbp-web-attacks** — `bbp-xss-hunter`, `bbp-sqli-hunter`, `bbp-ssrf-hunter`, `bbp-osci-hunter`, `bbp-xxe-hunter`, `bbp-prototype-pollution`, `bbp-cache-poisoning`, `bbp-file-upload-lfi`
-  - **bbp-web-security** — `bbp-api-audit`, `bbp-auth-bypass`, `bbp-graphql-audit`, `bbp-business-logic`, `bbp-waf-bypass`
+  - **bbp-web-attacks** — `bbp-xss-hunter`, `bbp-sqli-hunter`, `bbp-ssrf-hunter`, `bbp-osci-hunter`, `bbp-xxe-hunter`, `bbp-prototype-pollution`, `bbp-cache-poisoning`, `bbp-file-upload-lfi`, `bbp-advanced-fuzzing`
+  - **bbp-web-security** — `bbp-api-audit`, `bbp-auth-bypass`, `bbp-graphql-audit`, `bbp-business-logic`, `bbp-waf-bypass`, `bbp-wpscan`
   - **bbp-mobile** — `bbp-android-apk-audit`, `bbp-mobile-reverse-engine`, `bbp-mobile-dynamic-analysis`, `bbp-mobile-ipc-exploit`, `bbp-mobile-local-storage`
-  - **bbp-source-review** — `bbp-source-code-audit`, `bbp-rust-security-review`, `bbp-crypto-audit`
-  - **bbp-reference** — `bbp-edoverflow-cheatsheet`, `bbp-payloads-all-the-things`, `bbp-hackerone-disclosures`, `bbp-nuclei-templates`, `bbp-cve-poc-db`
+  - **bbp-source-review** — `bbp-source-code-audit`, `bbp-rust-security-review`, `bbp-crypto-audit`, `code-security`
+  - **bbp-reference** — `bbp-edoverflow-cheatsheet`, `bbp-payloads-all-the-things`, `bbp-hackerone-disclosures`, `bbp-nuclei-templates`, `bbp-cve-poc-db`, `bbp-hacktricks`, `bbp-seclists`
+  - **ghost-security** — `ghost-proxy`, `ghost-repo-context`, `ghost-report`, `ghost-scan-code`, `ghost-scan-deps`, `ghost-scan-secrets`, `ghost-validate`
+  - **binary-analysis** — `binary-analysis-patterns`, `binary-hardening`, `binary-triage`, `ctf-reverse`, `protocol-reverse-engineering`, `rev-frida`
+  - **windows-security** — `windows-av-evasion`, `windows-lateral-movement`, `windows-privilege-escalation`
+  - **agent-core** — `agent-browser`, `find-skills`
 
 ## Slash Commands
 
 ### `/program <url> [name]`
 
 **Program workflow orchestrator.** Memicu otomatisasi recon dan triage awal.
-**Aturan Agen:** Jika user mengetik perintah ini, SEGERA panggil skill `bbp-program-orchestrator` dan ikuti instruksi di dalamnya tanpa bertanya lagi.
+**Aturan Agen:** Jika user mengetik perintah ini, SEGERA panggil skill `bbp-program-orchestrator` (yang akan memerintahkan AI untuk mengeksekusi `scripts/program.ps1`) dan ikuti instruksi di dalamnya tanpa bertanya lagi.
 
 ## Scan Loop
 
