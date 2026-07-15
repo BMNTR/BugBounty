@@ -63,7 +63,7 @@
   </g>
 
   <!-- terminal window -->
-  <g transform="translate(60,115)" filter="url(#drop-shadow)">
+  <g transform="translate(85,105)" filter="url(#drop-shadow)">
     <rect x="0" y="0" width="640" height="135" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
     <rect x="0" y="0" width="640" height="28" rx="10" fill="#21262d"/>
     <circle cx="18" cy="14" r="5" fill="#ff5f56"/>
@@ -79,10 +79,10 @@
   </g>
 
   <!-- title block -->
-  <g transform="translate(60,65)">
+  <g transform="translate(85,80)">
     <text x="0" y="0" class="font-sans" font-size="46" font-weight="800" fill="#f0f6fc" filter="url(#glow)">Bug<tspan fill="#39d353">Bounty</tspan></text>
   </g>
-  <text x="60" y="90" class="font-mono" font-size="14" fill="#8b949e">agent-assisted recon &#8226; scanning &#8226; source audit &#8226; AI reporting</text>
+  <text x="85" y="270" class="font-mono" font-size="14" fill="#8b949e">agent-assisted recon &#8226; scanning &#8226; source audit &#8226; AI reporting</text>
 
   <!-- bottom accent line -->
   <rect x="0" y="296" width="1200" height="4" fill="url(#accent)"/>
