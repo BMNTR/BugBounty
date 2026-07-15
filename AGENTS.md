@@ -24,13 +24,13 @@
 ## Skill Reference
 
 - Base skill: `C:\BugBounty\SKILL.md` — encyclopedia (37 sections, 95KB, commands & workflows)
-- Skills: `C:\BugBounty\.agents\skills\` — 57 skills, load via `/skill <name>`:
+- Skills: `C:\BugBounty\.agents\skills\` — 62 skills, load via `/skill <name>`:
   - **bbp-ops** — `bbp-program-orchestrator`, `bbp-program-triage`, `bbp-duplicate-guard`, `bbp-evidence-workbench`, `bbp-report-writer`
   - **bbp-recon** — `bbp-web-recon`, `bbp-subdomain-takeover`, `bbp-cloud-security-audit`
   - **bbp-web-attacks** — `bbp-xss-hunter`, `bbp-sqli-hunter`, `bbp-ssrf-hunter`, `bbp-osci-hunter`, `bbp-xxe-hunter`, `bbp-prototype-pollution`, `bbp-cache-poisoning`, `bbp-file-upload-lfi`, `bbp-advanced-fuzzing`
   - **bbp-web-security** — `bbp-api-audit`, `bbp-auth-bypass`, `bbp-graphql-audit`, `bbp-business-logic`, `bbp-waf-bypass`, `bbp-wpscan`
   - **bbp-mobile** — `bbp-android-apk-audit`, `bbp-mobile-reverse-engine`, `bbp-mobile-dynamic-analysis`, `bbp-mobile-ipc-exploit`, `bbp-mobile-local-storage`
-  - **bbp-source-review** — `bbp-source-code-audit`, `bbp-rust-security-review`, `bbp-crypto-audit`, `code-security`
+  - **bbp-source-review** — `bbp-source-code-audit`, `bbp-rust-security-review`, `bbp-crypto-audit`, `code-security`, `variant-analysis`, `sharp-edges`, `vulnhunter`, `security-auditor`, `security-scanning-security-sast`
   - **bbp-reference** — `bbp-edoverflow-cheatsheet`, `bbp-payloads-all-the-things`, `bbp-hackerone-disclosures`, `bbp-nuclei-templates`, `bbp-cve-poc-db`, `bbp-hacktricks`, `bbp-seclists`
   - **ghost-security** — `ghost-proxy`, `ghost-repo-context`, `ghost-report`, `ghost-scan-code`, `ghost-scan-deps`, `ghost-scan-secrets`, `ghost-validate`
   - **binary-analysis** — `binary-analysis-patterns`, `binary-hardening`, `binary-triage`, `ctf-reverse`, `protocol-reverse-engineering`, `rev-frida`
