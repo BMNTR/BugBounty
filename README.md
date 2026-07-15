@@ -1,3 +1,32 @@
+<div align="center">
+
+<img src="assets/banner.svg" alt="BugBounty — Agent-assisted Bug Bounty workflow automation" width="100%"/>
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/BMNTR/BugBounty/blob/master/LICENSE)
+[![PowerShell](https://img.shields.io/badge/PowerShell-71.8%25-5391FE?logo=powershell&logoColor=white)](https://github.com/BMNTR/BugBounty/search?l=powershell)
+[![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)](#prerequisites)
+[![AI Agent Ready](https://img.shields.io/badge/AI%20Agent-Ready-6E56CF)](#agent-setup-ai-assistant)
+[![Last Commit](https://img.shields.io/github/last-commit/BMNTR/BugBounty)](https://github.com/BMNTR/BugBounty/commits/master/)
+[![Stars](https://img.shields.io/github/stars/BMNTR/BugBounty?style=social)](https://github.com/BMNTR/BugBounty/stargazers)
+
+</div>
+
+---
+
+## 📑 Daftar Isi
+
+- [Prerequisites](#prerequisites)
+- [Quick Setup](#quick-setup)
+- [Wordlists](#wordlists)
+- [Agent Setup (AI Assistant)](#agent-setup-ai-assistant)
+- [Workflow](#workflow)
+  - [Pipeline Flowchart](#pipeline-flowchart)
+- [Structure](#structure)
+- [Private Programs](#private-programs)
+- [Disclaimer](#disclaimer)
+
+---
+
 # BugBounty
 
 Bug bounty workflow automation — agent-assisted recon, scanning, source audit, mobile analysis, and report writing.
