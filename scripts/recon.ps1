@@ -6,7 +6,8 @@ param(
     [string]$OutOfScopeFile,
     [switch]$Quick,
     [switch]$Nuclei,
-    [switch]$Screenshots
+    [switch]$Screenshots,
+    [string]$BugBountyUser
 )
 
 $ErrorActionPreference = "Continue"
@@ -40,11 +41,11 @@ if (Get-Command assetfinder -ErrorAction SilentlyContinue) {
 }
 
 if (Get-Command amass -ErrorAction SilentlyContinue) {
-    Write-Output "  [-] Running amass (passive)..."
-    if ($Quick) { $amassArgs = "-passive -d $Domain -silent" }
-    else { $amassArgs = "-passive -d $Domain -o $reconDir\amass_output.txt -silent" }
-    $out = & amass enum $amassArgs 2>$null
-    $allSubs += $out
+    Write-Output "  [-] Skipping amass (passive) to prevent hanging..."
+    # if ($Quick) { $amassArgs = "-passive -d $Domain -silent" }
+    # else { $amassArgs = "-passive -d $Domain -o $reconDir\amass_output.txt -silent" }
+    # $out = & amass enum $amassArgs 2>$null
+    # $allSubs += $out
 }
 
 # Deduplicate and initial domain filter
@@ -102,7 +103,9 @@ if ((Get-Command naabu -ErrorAction SilentlyContinue) -and (Test-Path $subsFile)
 
 if ((Get-Command httpx -ErrorAction SilentlyContinue) -and (Test-Path $httpxInput)) {
     Write-Output "  [-] Running httpx on targets..."
-    & httpx -l $httpxInput -silent -o $aliveFile -threads 50 2>$null
+    $httpxArgs = "-l $httpxInput -silent -o $aliveFile -threads 30 -rl 50 -H `"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36`""
+    if ($BugBountyUser) { $httpxArgs += " -H `"X-Bug-Bounty: $BugBountyUser`"" }
+    & httpx @($httpxArgs -split ' ') 2>$null
     $aliveCount = (Get-Content $aliveFile | Measure-Object -Line).Lines
     Write-Output "  [+] $aliveCount alive HTTP servers"
 }
@@ -122,6 +125,16 @@ if (Get-Command waybackurls -ErrorAction SilentlyContinue) {
     Write-Output "  [-] Running waybackurls..."
     $out = & waybackurls $Domain 2>$null
     $allUrls += $out
+}
+
+if (Get-Command waymore -ErrorAction SilentlyContinue) {
+    Write-Output "  [-] Running waymore..."
+    $waymoreOut = "$reconDir\waymore_urls.txt"
+    & waymore -i $Domain -mode U -oU $waymoreOut 2>$null
+    if (Test-Path $waymoreOut) {
+        $out = Get-Content $waymoreOut
+        $allUrls += $out
+    }
 }
 
 if ($Quick -eq $false -and (Get-Command katana -ErrorAction SilentlyContinue) -and (Test-Path $aliveFile)) {
@@ -147,7 +160,26 @@ if ($Quick -eq $false) {
         if ((Get-Item $aliveFile).length -gt 0) {
             foreach ($host in (Get-Content $aliveFile)) {
                 $hostUrl = $host.TrimEnd('/')
-                & ffuf -w $wordlist -u "$hostUrl/FUZZ" -mc 200,204,301,302,307,401,403,500 -t 50 -silent >> "$reconDir\ffuf.log" 2>$null
+                & ffuf -w $wordlist -u "$hostUrl/FUZZ" -mc 200,204,301,302,307,401,403,500 -t 30 -p "0.1-0.5" -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" -silent >> "$reconDir\ffuf.log" 2>$null
+            }
+        }
+    }
+
+    # Kiterunner for API brute forcing
+    if (Get-Command kr -ErrorAction SilentlyContinue) {
+        Write-Output "  [-] Running kiterunner on alive hosts..."
+        $krOut = "$reconDir\kiterunner_results.txt"
+        & kr scan $aliveFile -A=apiroutes-220828 -x 10 -o text > $krOut 2>$null
+    }
+
+    # Clairvoyance for GraphQL schema dumping
+    if (Get-Command clairvoyance -ErrorAction SilentlyContinue) {
+        $gqlUrls = Get-Content $urlsFile | Where-Object { $_ -match 'graphql' }
+        if ($gqlUrls) {
+            Write-Output "  [-] GraphQL endpoints found. Running Clairvoyance..."
+            foreach ($gq in $gqlUrls) {
+                $gqDomain = $gq -replace '^https?://', '' -replace '/.*$', ''
+                & clairvoyance $gq -o "$reconDir\graphql_schema_$gqDomain.graphql" 2>$null
             }
         }
     }
@@ -166,6 +198,18 @@ if ($Quick -eq $false) {
             Write-Output "  [-] Running SecretFinder on $jsCount JavaScript files..."
             & SecretFinder -i $jsUrls -o cli > $secretOut 2>$null
         }
+
+        if ($jsCount -gt 0 -and (Get-Command xnLinkFinder -ErrorAction SilentlyContinue)) {
+            Write-Output "  [-] Running xnLinkFinder on $jsCount JavaScript files..."
+            $linkfinderOut = "$reconDir\js_endpoints.txt"
+            & xnLinkFinder -i $jsUrls -sp $Domain -o $linkfinderOut 2>$null
+            
+            # Merge extracted endpoints back into urls.txt
+            if (Test-Path $linkfinderOut) {
+                Write-Output "    -> Extracted endpoints saved to $linkfinderOut"
+                Get-Content $linkfinderOut | Out-File -Append -FilePath $urlsFile -Encoding UTF8
+            }
+        }
     }
 
     # dalfox for XSS on parametrized URLs
@@ -180,6 +224,27 @@ if ($Quick -eq $false) {
             & dalfox file $paramUrls -b "https://your-oast-server.com" -o $dalfoxOut --silence 2>$null
         }
     }
+
+    # x8 for Parameter Discovery
+    if ((Test-Path $urlsFile) -and (Get-Command x8 -ErrorAction SilentlyContinue)) {
+        Write-Output "  [-] Running x8 parameter discovery on interesting URLs..."
+        $x8Out = "$reconDir\x8_params.txt"
+        Get-Content $urlsFile | Where-Object { $_ -notmatch '\?' } | Set-Content "$reconDir\endpoints_only.txt"
+        & x8 -u "$reconDir\endpoints_only.txt" -w "C:\BugBounty\wordlists\params.txt" -O $x8Out 2>$null
+    }
+}
+
+# Phase 4.5: URL Sorting via gf
+Write-Output "`n[+] Phase 4.5: URL Sorting (gf patterns)"
+$gfDir = "$reconDir\gf_patterns"
+New-Item -ItemType Directory -Path $gfDir -Force | Out-Null
+
+if (Get-Command gf -ErrorAction SilentlyContinue) {
+    Write-Output "  [-] Categorizing URLs into vulnerability buckets..."
+    $patterns = @("ssrf", "sqli", "lfi", "xss", "redirect", "idor")
+    foreach ($p in $patterns) {
+        & cat $urlsFile | & gf $p > "$gfDir\potensi_$p.txt" 2>$null
+    }
 }
 
 # Phase 5: Nuclei scan (optional)
@@ -187,7 +252,9 @@ if ($Nuclei) {
     Write-Output "`n[+] Phase 5: Nuclei scanning"
     if (Get-Command nuclei -ErrorAction SilentlyContinue -and (Test-Path $aliveFile)) {
         $nucleiOut = "$reconDir\nuclei_results.txt"
-        & nuclei -l $aliveFile -t ~/nuclei-templates/ -severity low,medium,high,critical -o $nucleiOut -silent 2>$null
+        $nucleiArgs = "-l $aliveFile -t ~/nuclei-templates/ -severity low,medium,high,critical -o $nucleiOut -silent -rate-limit 30 -bulk-size 25 -H `"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36`""
+        if ($BugBountyUser) { $nucleiArgs += " -H `"X-Bug-Bounty: $BugBountyUser`"" }
+        & nuclei @($nucleiArgs -split ' ') 2>$null
         Write-Output "  [+] Nuclei scan complete"
         
         # Check for Critical/High findings and notify

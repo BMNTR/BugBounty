@@ -24,13 +24,13 @@
 ## Skill Reference
 
 - Base skill: `C:\BugBounty\SKILL.md` — encyclopedia (37 sections, 95KB, commands & workflows)
-- Skills: `C:\BugBounty\.agents\skills\` — 62 skills, load via `/skill <name>`:
+- Skills: `C:\BugBounty\.agents\skills\` — 66 skills, load via `/skill <name>`:
   - **bbp-ops** — `bbp-program-orchestrator`, `bbp-program-triage`, `bbp-duplicate-guard`, `bbp-evidence-workbench`, `bbp-report-writer`
   - **bbp-recon** — `bbp-web-recon`, `bbp-subdomain-takeover`, `bbp-cloud-security-audit`
   - **bbp-web-attacks** — `bbp-xss-hunter`, `bbp-sqli-hunter`, `bbp-ssrf-hunter`, `bbp-osci-hunter`, `bbp-xxe-hunter`, `bbp-prototype-pollution`, `bbp-cache-poisoning`, `bbp-file-upload-lfi`, `bbp-advanced-fuzzing`
-  - **bbp-web-security** — `bbp-api-audit`, `bbp-auth-bypass`, `bbp-graphql-audit`, `bbp-business-logic`, `bbp-waf-bypass`, `bbp-wpscan`
+  - **bbp-web-security** — `bbp-api-audit`, `bbp-auth-bypass`, `bbp-graphql-audit`, `bbp-business-logic`, `bbp-waf-bypass`, `bbp-wpscan`, `bbp-spring-actuator-audit`, `bbp-rsocket-testing`, `bbp-java-deserialization`
   - **bbp-mobile** — `bbp-android-apk-audit`, `bbp-mobile-reverse-engine`, `bbp-mobile-dynamic-analysis`, `bbp-mobile-ipc-exploit`, `bbp-mobile-local-storage`
-  - **bbp-source-review** — `bbp-source-code-audit`, `bbp-rust-security-review`, `bbp-crypto-audit`, `code-security`, `variant-analysis`, `sharp-edges`, `vulnhunter`, `security-auditor`, `security-scanning-security-sast`
+  - **bbp-source-review** — `bbp-source-code-audit`, `bbp-rust-security-review`, `bbp-crypto-audit`, `code-security`, `variant-analysis`, `sharp-edges`, `vulnhunter`, `security-auditor`, `security-scanning-security-sast`, `bbp-evoting-crypto-audit`
   - **bbp-reference** — `bbp-edoverflow-cheatsheet`, `bbp-payloads-all-the-things`, `bbp-hackerone-disclosures`, `bbp-nuclei-templates`, `bbp-cve-poc-db`, `bbp-hacktricks`, `bbp-seclists`
   - **ghost-security** — `ghost-proxy`, `ghost-repo-context`, `ghost-report`, `ghost-scan-code`, `ghost-scan-deps`, `ghost-scan-secrets`, `ghost-validate`
   - **binary-analysis** — `binary-analysis-patterns`, `binary-hardening`, `binary-triage`, `ctf-reverse`, `protocol-reverse-engineering`, `rev-frida`
@@ -60,22 +60,18 @@
 - Found XSS? Try blind XSS, eval-based polyglots.
 - **3 bypass attempts minimum** sebelum declare unexploitable.
 
-### 3. Rate limiting
-Default tool flags sering flood. Tambahin delay/rate ke setiap scan:
-```
-# nuclei
-nuclei -l alive.txt -t cves/ -rate-limit 30 -bulk-size 25
+### 3. WAF Evasion & Rate Limiting
+Default tool flags sering memicu WAF (Cloudflare/Imperva) karena User-Agent bawaan (go-http-client) dan interval request yang statis/robotik. Gunakan teknik ini:
 
-# ffuf (slow biar ga WAF trigger)
-ffuf -u https://$TARGET/FUZZ -w wordlist.txt -rate 30
-
-# httpx (ngebang semua host sekaligus)
-httpx -l subs.txt -rl 50
-
-# katana (tambah delay)
-katana -u https://$TARGET -delay 2s
-```
-Kalo mulai dapet 403/429, turunin rate sampe stabil.
+- **User-Agent Spoofing:** Selalu gunakan UA browser asli.
+  - `nuclei`: Gunakan `-H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36..."` atau set di `.nuclei-config.yaml`.
+  - `ffuf`: Gunakan `-H "User-Agent: Mozilla/5.0..."`
+  - `sqlmap`: Selalu gunakan `--random-agent`
+- **Jitter / Randomized Delay:** Jangan gunakan interval flat. WAF mendeteksi pola waktu yang konsisten.
+  - `ffuf`: Gunakan `-p "0.1-0.5"` (delay acak antara 0.1 hingga 0.5 detik).
+  - `nuclei`: Gunakan `-rate-limit 30 -bulk-size 25` dan tambahkan delay jika diperlukan.
+  - `katana`: Gunakan `-delay 2s` (atau lebih jika diblokir).
+- **Payload Strategy:** Kirim payload mentah (tanpa encoding) di awal discovery. Hanya gunakan encoding (URL/Double/Null-byte) **setelah** terdeteksi ada pemblokiran, untuk menghindari *false negative*.
 
 ### 5. Error recovery
 
