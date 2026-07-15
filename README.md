@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/banner.svg" alt="BugBounty — Agent-assisted Bug Bounty workflow automation" width="100%"/>
+<img src="assets/banner.svg?v=2" alt="BugBounty — Agent-assisted Bug Bounty workflow automation" width="100%"/>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/BMNTR/BugBounty/blob/master/LICENSE)
 [![PowerShell](https://img.shields.io/badge/PowerShell-71.8%25-5391FE?logo=powershell&logoColor=white)](https://github.com/BMNTR/BugBounty/search?l=powershell)
