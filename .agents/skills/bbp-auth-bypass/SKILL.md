@@ -25,6 +25,7 @@ This skill provides methodologies for attacking identity and access management c
 
 ### 2. JSON Web Token (JWT) Attacks
 - **Analysis:** Decode the JWT at `jwt.io` to understand the payload structure.
+- **Automation (jwt_tool):** Use `python C:\BugBounty\tools\auth\jwt_tool\jwt_tool.py <token>` for automated analysis, cracking, and exploit payload generation.
 - **Exploitation:**
   - **None Algorithm:** Change the algorithm header (`alg`) to `none` and remove the signature part of the token.
   - **Key Confusion (RS256 to HS256):** If the server expects an asymmetric key (RS256) but accepts a symmetric algorithm (HS256), sign the token using the public key as the symmetric secret.
@@ -40,3 +41,12 @@ This skill provides methodologies for attacking identity and access management c
 - **Host Header Injection:** Alter the `Host` header or inject `X-Forwarded-Host: attacker.com` during password reset. The generated reset link might point to the attacker's domain, leaking the token when clicked.
 - **Email Parameter Pollution:** Inject multiple emails: `email=victim@a.com&email=attacker@a.com`. The token might be sent to both.
 - **Token Predictability:** Analyze the entropy of the reset token. If it's a short numeric PIN or a predictable timestamp hash, brute-force it.
+
+### 5. Bypass 401/403 (Forbidden)
+- **Tool Automation (byp4xx):** Use `bash C:\BugBounty\tools\auth\byp4xx\byp4xx.sh -c -u <url>` to automatically attempt HTTP Verb manipulation, header injection (`X-Forwarded-For: 127.0.0.1`), and path traversal bypasses.
+
+### 6. Managing Sessions & Extensions (Chrome / Brave)
+Since PwnFox relies heavily on Firefox containers, if you use **Chrome** or **Brave**:
+- **Browser Profiles:** Use built-in browser profiles (Profile 1 for Admin, Profile 2 for User A) to keep session cookies isolated. Configure both to route through Burp Proxy.
+- **SessionBox:** An extension for Chrome/Brave that isolates tabs like Firefox containers.
+- **Burp Autorize (Mandatory):** Regardless of your browser, install the **Autorize** extension from the Burp BApp Store. Give it the token of a low-privileged user, and browse the site normally as an Admin/High-privileged user to automatically hunt for IDOR/BOLA in the background.

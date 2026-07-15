@@ -1,103 +1,45 @@
-# Web Recon Skill
+---
+name: bbp-web-recon
+description: Guide for executing and analyzing web reconnaissance. Use this skill to orchestrate automated recon using recon.ps1 and to interpret the results for manual testing pivoting.
+---
 
-Step-by-step pipeline for web reconnaissance on bug bounty targets. Runs before manual testing.
+# Web Reconnaissance & Analysis
 
-## Pipeline
+**CRITICAL RULE**: Do NOT manually execute individual recon tools (like `subfinder`, `httpx`, `ffuf`, `nuclei`) in the terminal. That is inefficient. Instead, rely on the automated pipeline and use this skill to analyze the output.
 
-### Phase 1: Surface Expansion
-```bash
-# subdomain enumeration + DNS resolution
-subfinder -d $DOMAIN -all -o subs.txt
-assetfinder --subs-only $DOMAIN >> subs.txt
-sort -u subs.txt -o subs.txt
-
-# DNS resolution
-cat subs.txt | dnsx -silent -a -resp-only -o resolved.txt
+## 1. Execution
+If recon has not yet been performed, run the automated pipeline:
+```powershell
+.\scripts\recon.ps1 -Domain <target.com>
+# Add -Quick for fast scans or -Nuclei for full vulnerability scanning
 ```
 
-### Phase 2: Live Host Probing
-```bash
-cat subs.txt | httpx -silent -title -status-code -tech-detect -o alive.txt
+## 2. Analyzing Recon Outputs
 
-# screenshot all live
-gowitness file -f alive.txt -P screens/ --no-http
-```
+Once `recon.ps1` or `/program` finishes, review the files generated in `programs/<target>/recon/` and `programs/<target>/evidence/`.
 
-### Phase 3: URL Collection
-```bash
-# wayback + commoncrawl + alienvault
-gau --subs $DOMAIN | sort -u > urls.txt
-echo $DOMAIN | waybackurls >> urls.txt
-sort -u urls.txt -o urls.txt
+### Prioritization Strategy
+1. **Critical/High Vulnerabilities (`nuclei-*.txt`)**: Immediately validate these manually. Do not blindly report them; trace the logic and prove the impact.
+2. **Hidden Content (`ffuf.json` / `endpoints.txt`)**: Look for sensitive paths like `/admin`, `/api/v1`, `/swagger.json`, `/metrics`, or exposed backups (`.env.bak`, `.git`).
+3. **JavaScript Files (`js.txt`)**: Look for hardcoded credentials or API keys. You can run `.\scripts\secrets_scan.ps1` on downloaded JS files.
+4. **Parameters (`params.txt`)**: Feed interesting parameters into specialized testing (e.g., test `url=`, `redirect=` for SSRF, `id=` for IDOR/SQLi).
 
-# extract js paths, endpoints, params
-cat urls.txt | grep -E '\.js($|\?)' | sort -u > js.txt
-cat urls.txt | unfurl paths | sort -u > endpoints.txt
-cat urls.txt | unfurl keys | sort -u > params.txt
-```
+## 3. Pivoting: When to Switch Skills
 
-### Phase 4: Content Discovery
-```bash
-# directory brute (focused wordlist)
-ffuf -u https://$TARGET/FUZZ -w /usr/share/seclists/Discovery/Web-Content/common.txt \
-  -ac -t 100 -o ffuf.json
+Reconnaissance is just data gathering. Your real job is to exploit. Based on the signals you find in the recon output, immediately transition to the appropriate manual exploitation skill:
 
-# api endpoint brute
-ffuf -u https://$TARGET/FUZZ -w /usr/share/seclists/Discovery/Web-Content/api/objects.txt
-```
+| Signal Found in Recon | Switch To Skill / Next Action |
+|-----------------------|-------------------------------|
+| Cloud Metadata or `url=`, `file=` params | **`bbp-ssrf-hunter`** |
+| File Upload functionality (`/upload`, `/avatar`) | **`bbp-file-upload-lfi`** |
+| GraphQL endpoint (`/graphql`) | **`bbp-graphql-audit`** |
+| API Endpoints (`/api/`, Swagger/OpenAPI docs) | **`bbp-api-audit`** |
+| Auth mechanisms (JWT, OAuth, `/login`, password reset) | **`bbp-auth-bypass`** |
+| Reflected parameters | **`bbp-xss-hunter`** |
+| Shopping Cart / Checkout / Wallet | **`bbp-business-logic`** |
+| WordPress detected | **`bbp-wpscan`** |
 
-### Phase 5: Vulnerability Scanning
-```bash
-# nuclei — cve + exposures + misconfigs
-nuclei -l alive.txt -t cves/ -t exposures/ -o nuclei-critical.txt
-nuclei -l alive.txt -t misconfiguration/ -o nuclei-misconfig.txt
-
-# tech-specific
-nuclei -l alive.txt -t technologies/ -t takeovers/
-```
-
-### Phase 6: Manual Signal Collection
-```
-For each live host, record:
-- tech stack (from httpx / wappalyzer)
-- auth mechanisms (JWT, OAuth, session cookie)
-- upload endpoints
-- API routes (look for graphql, swagger, /api/v1)
-- interesting params (id, file, url, redirect, callback)
-- template engines (Jinja2, Twig, Freemarker, Velocity, Pug/Jade, Handlebars)
-```
-
-**SSTI quick check** — input `{{7*7}}`, `#{7*7}`, `${{7*7}}`, `{{7*'7'}}` di params. Kalo response mengandung `49` atau `777`, kemungkinan SSTI. Lanjut detection per engine di SKILL.md §4.9.
-
-## Output Structure
-```
-programs/<target>/
-  recon/
-    subs.txt
-    resolved.txt
-    alive.txt
-    urls.txt
-    js.txt
-    endpoints.txt
-    params.txt
-    screens/
-    ffuf.json
-    nuclei-*.txt
-    notes.md
-```
-
-## When to Stop & Switch Skills
-| Signal | Switch To |
-|--------|-----------|
-| SSRF parameter found (`url=`, `file=`) | manual test (SKILL.md §4.3) |
-| Upload endpoint | manual test (SKILL.md §4.8) |
-| GraphQL endpoint | `bbp-api-testing` or SKILL.md §5.2 |
-| JWT found | manual test (SKILL.md §4.5, JWT section) |
-| OpenAPI/Swagger doc | `bbp-api-testing` |
-| auth bypass pattern (IDOR, race) | manual test (SKILL.md §4.5-4.6) |
-| SSTI candidate (`{{7*7}}` reflected) | SKILL.md §4.9 (SSTI per-engine payloads) |
-| nothing interesting after full recon | move to next target |
-
-## Reference
-
-Deep command reference in `SKILL.md §2` (Reconnaissance) and `SKILL.md §4` (Web Vulnerabilities). This skill is the workflow — SKILL.md has the encyclopedia.
+## 4. Quick Manual Checks
+While reviewing endpoints manually in the browser or via proxy, always do quick checks:
+- **SSTI**: Inject `{{7*7}}`, `#{7*7}`, `${{7*7}}`, `{{7*'7'}}` into reflected parameters. If the response evaluates it (e.g., returns `49` or `777`), SSTI is likely present.
+- **Error Forcing**: Input characters like `'`, `"`, `%00`, `[]` into parameters to trigger verbose errors and disclose framework/database versions.
