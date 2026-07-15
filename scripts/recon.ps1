@@ -103,9 +103,9 @@ if ((Get-Command naabu -ErrorAction SilentlyContinue) -and (Test-Path $subsFile)
 
 if ((Get-Command httpx -ErrorAction SilentlyContinue) -and (Test-Path $httpxInput)) {
     Write-Output "  [-] Running httpx on targets..."
-    $httpxArgs = "-l $httpxInput -silent -o $aliveFile -threads 30 -rl 50 -H `"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36`""
-    if ($BugBountyUser) { $httpxArgs += " -H `"X-Bug-Bounty: $BugBountyUser`"" }
-    & httpx @($httpxArgs -split ' ') 2>$null
+    $httpxArgs = @("-l", $httpxInput, "-silent", "-o", $aliveFile, "-threads", "30", "-rl", "50", "-H", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+    if ($BugBountyUser) { $httpxArgs += "-H"; $httpxArgs += "X-Bug-Bounty: $BugBountyUser" }
+    & httpx @httpxArgs 2>$null
     $aliveCount = (Get-Content $aliveFile | Measure-Object -Line).Lines
     Write-Output "  [+] $aliveCount alive HTTP servers"
 }
@@ -252,9 +252,9 @@ if ($Nuclei) {
     Write-Output "`n[+] Phase 5: Nuclei scanning"
     if (Get-Command nuclei -ErrorAction SilentlyContinue -and (Test-Path $aliveFile)) {
         $nucleiOut = "$reconDir\nuclei_results.txt"
-        $nucleiArgs = "-l $aliveFile -t ~/nuclei-templates/ -severity low,medium,high,critical -o $nucleiOut -silent -rate-limit 30 -bulk-size 25 -H `"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36`""
-        if ($BugBountyUser) { $nucleiArgs += " -H `"X-Bug-Bounty: $BugBountyUser`"" }
-        & nuclei @($nucleiArgs -split ' ') 2>$null
+        $nucleiArgs = @("-l", $aliveFile, "-t", "~/nuclei-templates/", "-severity", "low,medium,high,critical", "-o", $nucleiOut, "-silent", "-rate-limit", "30", "-bulk-size", "25", "-H", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        if ($BugBountyUser) { $nucleiArgs += "-H"; $nucleiArgs += "X-Bug-Bounty: $BugBountyUser" }
+        & nuclei @nucleiArgs 2>$null
         Write-Output "  [+] Nuclei scan complete"
         
         # Check for Critical/High findings and notify
