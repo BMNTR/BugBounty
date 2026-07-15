@@ -40,6 +40,31 @@
         <animate attributeName="width" values="0; 180" dur="1s" begin="0.5s" fill="freeze" />
       </rect>
     </clipPath>
+
+    <!-- Seamless Scrolling Log Block -->
+    <g id="log-block" class="font-mono" font-size="13">
+      <text x="0" y="0">0x2f8a</text>
+      <text x="0" y="22">CVE-████</text>
+      <text x="0" y="44">0x91c3</text>
+      <text x="0" y="66">GET /api</text>
+      <text x="0" y="88">200 OK</text>
+      <text x="0" y="110">0x77e1</text>
+      <text x="0" y="132">nuclei -t</text>
+      <text x="0" y="154">found: 3</text>
+      <text x="0" y="176">0xb4d2</text>
+      <text x="0" y="198">scan.log</text>
+      <text x="0" y="220">[+] sqli</text>
+      <text x="0" y="242">0x4a1f</text>
+      <text x="0" y="264">POST /auth</text>
+      <text x="0" y="286">403 WAF</text>
+      <text x="0" y="308">0xcc99</text>
+      <text x="0" y="330">bypassed</text>
+      <text x="0" y="352">██████</text>
+      <text x="0" y="374">0x81ee</text>
+      <text x="0" y="396">subfinder</text>
+      <text x="0" y="418">128 hosts</text>
+      <text x="0" y="440">0x00ff</text>
+    </g>
   </defs>
 
   <!-- background -->
@@ -56,18 +81,11 @@
     <path d="M 1160 260 L 1160 230 M 1160 260 L 1130 260"/>
   </g>
 
-  <!-- decorative hex / binary column, right side -->
-  <g class="font-mono" fill="#1f6feb" font-size="13">
-    <text x="1000" y="50" opacity="0.2">0x2f8a<animate attributeName="opacity" values="0.2; 1; 0.2" dur="3s" begin="0s" repeatCount="indefinite"/></text>
-    <text x="1000" y="72" opacity="0.2">CVE-████<animate attributeName="opacity" values="0.2; 1; 0.2" dur="4s" begin="1s" repeatCount="indefinite"/></text>
-    <text x="1000" y="94" opacity="0.2">0x91c3<animate attributeName="opacity" values="0.2; 1; 0.2" dur="5s" begin="2s" repeatCount="indefinite"/></text>
-    <text x="1000" y="116" opacity="0.2">GET /api<animate attributeName="opacity" values="0.2; 1; 0.2" dur="3s" begin="0.5s" repeatCount="indefinite"/></text>
-    <text x="1000" y="138" opacity="0.2">200 OK<animate attributeName="opacity" values="0.2; 1; 0.2" dur="4s" begin="1.5s" repeatCount="indefinite"/></text>
-    <text x="1000" y="160" opacity="0.2">0x77e1<animate attributeName="opacity" values="0.2; 1; 0.2" dur="5s" begin="2.5s" repeatCount="indefinite"/></text>
-    <text x="1000" y="182" opacity="0.2">nuclei -t<animate attributeName="opacity" values="0.2; 1; 0.2" dur="3s" begin="1s" repeatCount="indefinite"/></text>
-    <text x="1000" y="204" opacity="0.2">found: 3<animate attributeName="opacity" values="0.2; 1; 0.2" dur="4s" begin="2s" repeatCount="indefinite"/></text>
-    <text x="1000" y="226" opacity="0.2">0xb4d2<animate attributeName="opacity" values="0.2; 1; 0.2" dur="5s" begin="0.5s" repeatCount="indefinite"/></text>
-    <text x="1000" y="248" opacity="0.2">scan.log<animate attributeName="opacity" values="0.2; 1; 0.2" dur="3s" begin="2.5s" repeatCount="indefinite"/></text>
+  <!-- scrolling hex / binary column, right side -->
+  <g fill="#1f6feb" opacity="0.35">
+    <animateTransform attributeName="transform" type="translate" values="1000,0; 1000,-462" dur="15s" repeatCount="indefinite" />
+    <use href="#log-block" x="0" y="0" />
+    <use href="#log-block" x="0" y="462" />
   </g>
 
   <!-- terminal window -->
