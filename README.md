@@ -13,7 +13,7 @@
 
 ---
 
-## 📑 Daftar Isi
+## Table of Contents
 
 - [Prerequisites](#prerequisites)
 - [Quick Setup](#quick-setup)
