@@ -14,7 +14,43 @@
 - Run bug bounty work visibly whenever practical. Use visible terminal windows for installs, cloning, builds, tests, PoCs, APK decoding, dependency setup, long recon, and final validation. Background commands for quick file reads, `rg` searches, small bookkeeping edits.
 - Use HackerOne format for HackerOne reports.
 - Use YesWeHack `DESCRIPTION / EXPLOITATION / POC / RISK / REMEDIATION` format for YesWeHack reports.
-- **WORKSPACE HYGIENE**: DO NOT scatter project files in the root `C:\BugBounty` directory. When working on a specific target/project, ALL related files, scripts, dumps, and reports MUST be placed strictly inside its dedicated folder (e.g., `programs/<target-name>/`). Keep the root directory perfectly clean.
+- **WORKSPACE HYGIENE — STRICT ENFORCEMENT**: The root `C:\BugBounty` directory is a CLEAN ZONE. The following rules are NON-NEGOTIABLE:
+
+  **Root-level allowed files (do NOT add anything else here):**
+  ```
+  C:\BugBounty\
+  ├── AGENTS.md          ← Agent rules (this file)
+  ├── SKILL.md           ← Encyclopedia skill reference
+  ├── README.md          ← Project overview
+  ├── LICENSE            ← License
+  ├── .env               ← Global env vars (API keys, tokens)
+  ├── .gitignore         ← Git ignore rules
+  ├── manifest.json      ← Skills manifest
+  ├── skills-lock.json   ← Skills lock file
+  └── bugbounty_tutorial.md ← Learning reference (read-only)
+  ```
+
+  **File placement rules — ALWAYS follow this:**
+  ```
+  programs/<target-name>/           ← ALL work for a specific program goes here
+  programs/<target-name>/recon/     ← Subdomain lists, nuclei output, ffuf results
+  programs/<target-name>/evidence/  ← Screenshots, HTTP dumps, PoC files (.txt, .png, .http)
+  programs/<target-name>/reports/   ← Draft and final reports (.md)
+  programs/<target-name>/scripts/   ← Target-specific scripts (.ps1, .py, .sh)
+  programs/<target-name>/temp/      ← Temporary/scratch files (UI dumps, APK artifacts, session files, traffic logs)
+  ```
+
+  **Rules for agents:**
+  1. BEFORE creating ANY file, identify the active program. All files MUST go into `programs/<target-name>/`.
+  2. If a file is temporary (traffic log, screenshot, session dump, UI XML, APK artifact) → put it in `programs/<target-name>/temp/`.
+  3. If a file is evidence/PoC → put it in `programs/<target-name>/evidence/`.
+  4. If a file is a report draft → put it in `programs/<target-name>/reports/`.
+  5. If a file is a recon output (subdomains, nuclei, ffuf) → put it in `programs/<target-name>/recon/`.
+  6. NEVER write files to root, Desktop, Downloads, or any path outside `C:\BugBounty\programs\<target-name>\`.
+  7. If no active program is set and you need scratch space, use `C:\BugBounty\temp\` ONLY — and remind the user to assign a program.
+  8. `cookies.txt` is session-specific: keep it in `C:\BugBounty\temp\` if shared, or in `programs/<target-name>/temp/` if program-specific.
+  9. Global utility scripts go in `C:\BugBounty\_scripts\`. Target-specific scripts go in `programs/<target-name>/scripts/`.
+  10. When starting work on a new program, ALWAYS run: `New-Item -ItemType Directory -Force -Path "programs/<slug>/{recon,evidence,reports,scripts,temp}"` to pre-create the folder structure.
 
 ## Templates
 
@@ -42,7 +78,7 @@
 ### `/program <url> [name]`
 
 **Program workflow orchestrator.** Memicu otomatisasi recon dan triage awal.
-**Aturan Agen:** Jika user mengetik perintah ini, SEGERA panggil skill `bbp-program-orchestrator` (yang akan memerintahkan AI untuk mengeksekusi `scripts/program.ps1`) dan ikuti instruksi di dalamnya tanpa bertanya lagi.
+**Aturan Agen:** Jika user mengetik perintah ini, SEGERA panggil skill `bbp-program-orchestrator` (yang akan memerintahkan AI untuk mengeksekusi `wsl bash scripts/program.sh`) dan ikuti instruksi di dalamnya tanpa bertanya lagi.
 
 ## Scan Loop
 
@@ -146,9 +182,9 @@ The script checks for `cookies.txt` in the project root. If present, it sends th
 
 ## Scripts
 
-- `.\scripts\program.ps1 -Url <url>` — program workflow orchestrator (triggered by `/program`)
-- `.\scripts\recon.ps1 -Domain target.com` — full recon pipeline (subs → alive → URLs → ffuf → nuclei)
-- `.\scripts\recon.ps1 -Domain target.com -Quick -Nuclei -Screenshots` — all phases in one shot
+- `wsl bash scripts/program.sh -u <url>` — program workflow orchestrator (triggered by `/program`)
+- `wsl bash scripts/recon.sh -d target.com` — full recon pipeline (subs → alive → URLs → ffuf → nuclei)
+- `wsl bash scripts/recon.sh -d target.com --quick --nuclei` — all phases in one shot
 - `.\scripts\source_audit.ps1 -Path <path>` — source code audit (semgrep, codeql, ripgrep)
 - `.\scripts\dependency_audit.ps1 -Path <path>` — dependency vulnerability scanning
 - `.\scripts\mobile_audit.ps1 -ApkPath <path>` — Android APK analysis

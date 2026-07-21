@@ -8,7 +8,7 @@ description: Program workflow orchestrator. Call this first when starting a new 
 Call this first when starting a new target.
 
 ## Phase 1 — Autonomous Recon:
-1. Run `.\scripts\program.ps1 -Url <url>` which:
+1. Run `wsl bash scripts/program.sh -u <url>` which:
    - Fetches the program page and extracts scope domains
    - Classifies target type (web, API, mobile, source, cloud, crypto, rust)
    - Runs Passive Recon first (Google dorking, GitHub dorking, Shodan, Wayback)
@@ -53,7 +53,7 @@ Call this first when starting a new target.
 
 ## Phase 3 — Execution:
 - Run the selected skills against the program workspace
-- Use `.\scripts\recon.ps1 -Domain <domain>` for web targets
+- Use `wsl bash scripts/recon.sh -d <domain>` for web targets
 - Use `.\scripts\source_audit.ps1 -Path <path>` for source targets
 - Use `.\scripts\secrets_scan.ps1 -Path <path>` for secrets scanning
 - Use `.\scripts\mobile_audit.ps1 -ApkPath <path>` for mobile APK analysis
