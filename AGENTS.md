@@ -37,7 +37,6 @@
   ├── orchestrate.ps1    ← Unified CLI entry point
   ├── tools/             ← Global Hacking Tools
   ├── TriageTalon/       ← Attack Surface Recon API
-  ├── WebAcademy/        ← PortSwigger Lab Materials
   └── wordlists/         ← Global Wordlists (SecLists, etc)
   ```
 
