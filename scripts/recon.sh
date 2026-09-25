@@ -47,6 +47,13 @@ echo ">>> PHASE 2: Live Host Discovery"
 cat "$TEMP_DIR/subs.txt" | httpx -silent -title -tech -status-code -o "$RECON_DIR/alive_hosts.txt"
 cat "$RECON_DIR/alive_hosts.txt" | awk '{print $1}' > "$TEMP_DIR/alive_urls.txt"
 
+echo ">>> PHASE 2.5: Passive Triage (TriageTalon)"
+if [ -f "$BB_DIR/TriageTalon/recon_local_pro.py" ]; then
+    python3 "$BB_DIR/TriageTalon/recon_local_pro.py" "$DOMAIN" "$SLUG" || echo "[-] TriageTalon execution failed"
+else
+    echo "[-] TriageTalon not found, skipping."
+fi
+
 if [ "$RUN_NUCLEI" -eq 1 ]; then
     echo ">>> PHASE 3: Vulnerability Scanning (Nuclei)"
     if ! command -v nuclei &> /dev/null; then

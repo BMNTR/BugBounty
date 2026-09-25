@@ -1,0 +1,33 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "AGENTS.md",
+    "CRITICAL WORKSPACE HYGIENE RULE: You must STRICTLY OBEY the file placement rules. NEVER create, write, or drop any files or folders in the root directory (C:\\BugBounty\\). This is a strictly enforced CLEAN ZONE. All temporary, scratch, log, or evidence files MUST be placed in C:\\BugBounty\\temp\\ or the specific programs/<target>/temp/ directory. Violating this rule will corrupt the workspace and fail your task."
+  ],
+  "command": {
+    "program": {
+      "template": "Initiates the program workflow orchestrator",
+      "description": "Initialize a new bug bounty program: /program <url> [name]"
+    },
+    "recon": {
+      "template": "Runs WAF-aware recon pipeline",
+      "description": "Run recon on a domain: /recon <domain> [--skip-nuclei] [--skip-ffuf]"
+    },
+    "proxy": {
+      "template": "Manages proxy settings",
+      "description": "Manage proxy: /proxy <direct|tor|static|rotate> [arg]"
+    },
+    "report": {
+      "template": "Generates a bug bounty report from findings",
+      "description": "Generate report: /report <slug>"
+    },
+    "bb": {
+      "template": "Alias to BugBounty Orchestrator CLI",
+      "description": "Run orchestrator command: /bb <command> [args]"
+    },
+    "browser": {
+      "template": "Launches Shield Browser with BugBounty integration",
+      "description": "Launch browser with BB integration"
+    }
+  }
+}

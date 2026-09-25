@@ -63,10 +63,15 @@ Call this first when starting a new target.
 - Document every finding in `findings.md`
 - Continue until all high-risk components have been reviewed
 
-## Phase 4 — Report:
-- Load `bbp-report-writer` to generate final report
-- Save to `programs/<slug>/final_report.md`
-- Attach evidence from `programs/<slug>/evidence/`
+## Phase 4 — Report & Triage (Triager-Grade Verification):
+- Execute Mandatory Scope Gate: `python bbcore/cli.py scope <slug> --check <asset>`
+- Load `bbp-report-writer` to generate and self-triage the report:
+  1. **Mode 3 (Gotchas)**: Validate minimum proof requirements and check against Common N/A & overclaim traps for the specific vulnerability class.
+  2. **Mode 1 (Write)**: Structure verified evidence into clean platform-native format (HackerOne / YesWeHack).
+  3. **Mode 2 (Triage)**: Self-triage the drafted report against scope and anti-slop rules to ensure a `READY TO SUBMIT` verdict.
+- Save finalized report to `programs/<slug>/final_report.md`
+- Attach raw HTTP evidence dumps and non-destructive PoCs from `programs/<slug>/evidence/`
+- Perform final end-of-program scope sweep: `python bbcore/cli.py scope <slug> --sweep`
 
 ## Example:
 ```

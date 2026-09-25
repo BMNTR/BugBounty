@@ -1,17 +1,30 @@
 ---
 name: bbp-web-recon
-description: Guide for executing and analyzing web reconnaissance. Use this skill to orchestrate automated recon using recon.ps1 and to interpret the results for manual testing pivoting.
+description: WAF-aware web reconnaissance using bbcore orchestrator. Auto-detects WAF, rotates proxies, runs subfinder→httpx→nuclei→ffuf→katana→gowitness, and triages with TriageTalon.
 ---
 
 # Web Reconnaissance & Analysis
 
-**CRITICAL RULE**: Do NOT manually execute individual recon tools (like `subfinder`, `httpx`, `ffuf`, `nuclei`) in the terminal. That is inefficient. Instead, rely on the automated pipeline and use this skill to analyze the output.
+**CRITICAL RULE**: Do NOT manually execute individual recon tools. Use the unified orchestrator.
 
 ## 1. Execution
-If recon has not yet been performed, run the automated pipeline:
+
+### Quick recon (WAF-aware, auto proxy):
 ```powershell
-.\scripts\recon.ps1 -Domain <target.com>
-# Add -Quick for fast scans or -Nuclei for full vulnerability scanning
+.\orchestrate.ps1 recon <domain>
+```
+
+### Deep recon (+ TriageTalon port/CORS/sensitive scan):
+```powershell
+.\orchestrate.ps1 recon <domain>
+.\orchestrate.ps1 triagetalon <domain> <slug>
+```
+
+### Proxy options:
+```powershell
+.\orchestrate.ps1 proxy tor                    # Via Tor
+.\orchestrate.ps1 proxy rotate proxies.txt     # Rotate from list
+.\orchestrate.ps1 proxy direct                 # No proxy
 ```
 
 ## 2. Analyzing Recon Outputs

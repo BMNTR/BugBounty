@@ -12,13 +12,82 @@ tools/
 wordlists/
 node_modules/
 __pycache__/
+*.bak
+temp/
 *.apk
 *.zip
 *.exe
 cookies.txt
 discord_webhook.txt
 .env
+.env*
 *.local
 other-repos/
 repos/
 WebAcademy/
+.openteams/
+.opencode/
+.claude/
+.cursor/
+.gemini/
+
+# Session, Traffic & Credential dumps
+**/apikey.txt
+**/dev-portal-auth.json
+jwt.txt
+*.jwt
+token.txt
+tokens.txt
+bearer.txt
+session.json
+auth.json
+credentials.json
+*.har
+*.pcap
+*.pcapng
+*.burp
+
+# Certificates & Keys
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Evidence, Notes & Outputs (Root level)
+evidence/
+notes/
+scans/
+output/
+results/
+dumps/
+
+# Logs (Global)
+*.log
+interactsh.log
+.interactsh/
+
+# Databases & Storage
+*.sqlite
+*.sqlite3
+*.db
+
+# Python & Environment
+venv/
+.venv/
+env/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# IDE & OS Artifacts
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+desktop.ini
+
+TriageTalon/
+_backups/

@@ -1,227 +1,257 @@
-{
-  "version": 1,
-  "skills": {
-    "agent-browser": {
-      "source": "vercel-labs/agent-browser",
-      "sourceType": "github",
-      "skillPath": "skills/agent-browser/SKILL.md",
-      "computedHash": "ecc7641aea05f85ca3b11e7759d32aaf52fe05946ab4b63739c7bf78a41237a2"
-    },
-    "binary-analysis-patterns": {
-      "source": "wshobson/agents",
-      "sourceType": "github",
-      "skillPath": "plugins/reverse-engineering/skills/binary-analysis-patterns/SKILL.md",
-      "computedHash": "6c3a0ee7e2ed9b28b07d7483cf931d3dc77b45cce7e4ac896e7a532d9db9fdaf"
-    },
-    "binary-hardening": {
-      "source": "mohitmishra786/low-level-dev-skills",
-      "sourceType": "github",
-      "skillPath": "skills/runtimes/binary-hardening/SKILL.md",
-      "computedHash": "ad6af45b8a9ee8575ff0100d63b6da464ea429227997b678fcace8dccd31521f"
-    },
-    "binary-triage": {
-      "source": "cyberkaida/reverse-engineering-assistant",
-      "sourceType": "github",
-      "skillPath": "ReVa/skills/binary-triage/SKILL.md",
-      "computedHash": "030a57e11e4eb6fb494e95fad6f35b170546a1469d906b3cdd8ecbd31429a600"
-    },
-    "brandkit": {
-      "source": "leonxlnx/taste-skill",
-      "sourceType": "github",
-      "skillPath": "skills/brandkit/SKILL.md",
-      "computedHash": "735007879f5110aeae1e981a53fe74a12afde70347f9773dacd50e4697a091bf"
-    },
-    "code-security": {
-      "source": "semgrep/skills",
-      "sourceType": "github",
-      "skillPath": "skills/code-security/SKILL.md",
-      "computedHash": "a4b931c20f8ebe7d4de8a4a91df449684516f1af129b773c34ed0e02b294a622"
-    },
-    "ctf-reverse": {
-      "source": "ljagiello/ctf-skills",
-      "sourceType": "github",
-      "skillPath": "ctf-reverse/SKILL.md",
-      "computedHash": "66c526e7616947fe0ee614c04bc0ef4c5068cf8a670cb35884622898186bbe65"
-    },
-    "design-taste-frontend": {
-      "source": "leonxlnx/taste-skill",
-      "sourceType": "github",
-      "skillPath": "skills/taste-skill/SKILL.md",
-      "computedHash": "899b84384f74f540ea5284d9b2e9234e050998b42eacc805410b518d4226c0b3"
-    },
-    "design-taste-frontend-v1": {
-      "source": "leonxlnx/taste-skill",
-      "sourceType": "github",
-      "skillPath": "skills/taste-skill-v1/SKILL.md",
-      "computedHash": "0a226c13d69639553cf8a7c40aa5527b026820f8ddaf7a6b263988e32ab44a27"
-    },
-    "find-skills": {
-      "source": "vercel-labs/skills",
-      "sourceType": "github",
-      "skillPath": "skills/find-skills/SKILL.md",
-      "computedHash": "781bd6d3f9b19f8c9af6b53d8d0e4876d0183841b565db34ca7092ffa412d111"
-    },
-    "full-output-enforcement": {
-      "source": "leonxlnx/taste-skill",
-      "sourceType": "github",
-      "skillPath": "skills/output-skill/SKILL.md",
-      "computedHash": "524f7c7950c3fde726101613f630140411c7d080e63be718687f4b38f919be81"
-    },
-    "ghost-proxy": {
-      "source": "ghostsecurity/skills",
-      "sourceType": "github",
-      "skillPath": "plugins/ghost/skills/proxy/SKILL.md",
-      "computedHash": "3fc72d8c8115c56460eefe0c1521870eab82b61e97e4fea8f115d89ce6a90043"
-    },
-    "ghost-repo-context": {
-      "source": "ghostsecurity/skills",
-      "sourceType": "github",
-      "skillPath": "plugins/ghost/skills/repo-context/SKILL.md",
-      "computedHash": "16535115965e7272c46f5f4e6ad85653c5255d7ca824b1c74576d61735c09102"
-    },
-    "ghost-report": {
-      "source": "ghostsecurity/skills",
-      "sourceType": "github",
-      "skillPath": "plugins/ghost/skills/report/SKILL.md",
-      "computedHash": "bba83bf211f745c2f4673c4f50b4e920be26b192b6dea50271e4d66ee9916102"
-    },
-    "ghost-scan-code": {
-      "source": "ghostsecurity/skills",
-      "sourceType": "github",
-      "skillPath": "plugins/ghost/skills/scan-code/SKILL.md",
-      "computedHash": "74966232bac2a45ba565811701b194a818c4d5290d204b9735044f078b0ec6c4"
-    },
-    "ghost-scan-deps": {
-      "source": "ghostsecurity/skills",
-      "sourceType": "github",
-      "skillPath": "plugins/ghost/skills/scan-deps/SKILL.md",
-      "computedHash": "82d972451f1eaa72e83f89874be8a5db5cf9e89989c776b244a1bfe83311f40f"
-    },
-    "ghost-scan-secrets": {
-      "source": "ghostsecurity/skills",
-      "sourceType": "github",
-      "skillPath": "plugins/ghost/skills/scan-secrets/SKILL.md",
-      "computedHash": "9158ddc61203621906ff29417bdce065ed60ac69368068f043ac2e7a35d29da9"
-    },
-    "ghost-validate": {
-      "source": "ghostsecurity/skills",
-      "sourceType": "github",
-      "skillPath": "plugins/ghost/skills/validate/SKILL.md",
-      "computedHash": "31d7b5aa6926fc7035146c2ae5515e58c1e9a1b2363207dea6090d05d3916429"
-    },
-    "gpt-taste": {
-      "source": "leonxlnx/taste-skill",
-      "sourceType": "github",
-      "skillPath": "skills/gpt-tasteskill/SKILL.md",
-      "computedHash": "7bd1bfdda0e51016ca222693401a65fc0dd9bf9487e0bd5b1740ba510f6f963a"
-    },
-    "high-end-visual-design": {
-      "source": "leonxlnx/taste-skill",
-      "sourceType": "github",
-      "skillPath": "skills/soft-skill/SKILL.md",
-      "computedHash": "f730e4132775f13eea19e3dc39afc6bb453cfc0498872b127ad8f0d47cfd802d"
-    },
-    "image-to-code": {
-      "source": "leonxlnx/taste-skill",
-      "sourceType": "github",
-      "skillPath": "skills/image-to-code-skill/SKILL.md",
-      "computedHash": "3d2ac14d956fdafc5500d2108b90895e134d847f9f199e7f1d18bf1f814cf7c8"
-    },
-    "imagegen-frontend-mobile": {
-      "source": "leonxlnx/taste-skill",
-      "sourceType": "github",
-      "skillPath": "skills/imagegen-frontend-mobile/SKILL.md",
-      "computedHash": "7c1d1dc59cd0df4063b8621af543bf5dea1d576b261507e17b0323c69680b048"
-    },
-    "imagegen-frontend-web": {
-      "source": "leonxlnx/taste-skill",
-      "sourceType": "github",
-      "skillPath": "skills/imagegen-frontend-web/SKILL.md",
-      "computedHash": "27255c7c50181e58add156b2aa2bd5325285b85f04027e4c8b73742d98d7be0a"
-    },
-    "industrial-brutalist-ui": {
-      "source": "leonxlnx/taste-skill",
-      "sourceType": "github",
-      "skillPath": "skills/brutalist-skill/SKILL.md",
-      "computedHash": "e66e5a2a8b73cef79ab6546459c665e8b983645689c5f3772f7eed8b9f1e8e0e"
-    },
-    "minimalist-ui": {
-      "source": "leonxlnx/taste-skill",
-      "sourceType": "github",
-      "skillPath": "skills/minimalist-skill/SKILL.md",
-      "computedHash": "7e88897e0371184e97a82b8d9ef080323c13f21eb067b58ef71eb05173a08ac2"
-    },
-    "protocol-reverse-engineering": {
-      "source": "wshobson/agents",
-      "sourceType": "github",
-      "skillPath": "plugins/reverse-engineering/skills/protocol-reverse-engineering/SKILL.md",
-      "computedHash": "a3942d519710b59b270f09829f2be91697ecc55206ee26bd1e233d00c29bff37"
-    },
-    "redesign-existing-projects": {
-      "source": "leonxlnx/taste-skill",
-      "sourceType": "github",
-      "skillPath": "skills/redesign-skill/SKILL.md",
-      "computedHash": "47eced3e960a2c961d3cbee11fa1216264f589344b586a5cbd03967cd6b9c54b"
-    },
-    "rev-frida": {
-      "source": "p4nda0s/reverse-skills",
-      "sourceType": "github",
-      "skillPath": "skills/rev-frida/SKILL.md",
-      "computedHash": "92a162b05eb75b35def5448c6095f258abe48ed68a8bd33b69ac807ee6dc2327"
-    },
-    "security-auditor": {
-      "source": "charon-fan/agent-playbook",
-      "sourceType": "github",
-      "skillPath": "skills/security-auditor/SKILL.md",
-      "computedHash": "d3676d0a6902f96697486e13f022dd7523022cca1cd2dd8051764a4178fbb2a2"
-    },
-    "security-scanning-security-sast": {
-      "source": "rmyndharis/antigravity-skills",
-      "sourceType": "github",
-      "skillPath": "skills/security-scanning-security-sast/SKILL.md",
-      "computedHash": "8105e62a7ad292937928f1235796e4efa94df7f04478fbaccf848ebd4a333e25"
-    },
-    "sharp-edges": {
-      "source": "trailofbits/skills",
-      "sourceType": "github",
-      "skillPath": "plugins/sharp-edges/skills/sharp-edges/SKILL.md",
-      "computedHash": "96fccaa023922c19994b13e77800144d21c16c7a742136ff09d74dfa6973d8d4"
-    },
-    "stitch-design-taste": {
-      "source": "leonxlnx/taste-skill",
-      "sourceType": "github",
-      "skillPath": "skills/stitch-skill/SKILL.md",
-      "computedHash": "c96b580192b34167efa01f460bbc669ff4315cf97f3cf6ff85ded8029aa720b8"
-    },
-    "variant-analysis": {
-      "source": "trailofbits/skills",
-      "sourceType": "github",
-      "skillPath": "plugins/variant-analysis/skills/variant-analysis/SKILL.md",
-      "computedHash": "0c2d338622a7b35199534e1641615ddd71d6eaa631e1ea8c4be9190747d056d0"
-    },
-    "vulnhunter": {
-      "source": "sendaifun/skills",
-      "sourceType": "github",
-      "skillPath": "skills/vulnhunter/SKILL.md",
-      "computedHash": "64ed06b4baeda8b3b90e2b77cf722c9c088bd4cab1111b74c148498272399ee6"
-    },
-    "windows-av-evasion": {
-      "source": "yaklang/hack-skills",
-      "sourceType": "github",
-      "skillPath": "skills/windows-av-evasion/SKILL.md",
-      "computedHash": "08e9936b6b637902e789b6d54866283bf89c6ae79f999e8d750e40fab4f50814"
-    },
-    "windows-lateral-movement": {
-      "source": "yaklang/hack-skills",
-      "sourceType": "github",
-      "skillPath": "skills/windows-lateral-movement/SKILL.md",
-      "computedHash": "e4e5030b2ec0e14ab1829f9676599c77b28ab8980cf536b81b95c17eca8cfc5e"
-    },
-    "windows-privilege-escalation": {
-      "source": "yaklang/hack-skills",
-      "sourceType": "github",
-      "skillPath": "skills/windows-privilege-escalation/SKILL.md",
-      "computedHash": "8081dfc488930146bd77f397d286d1b82c79770b6c12759d7a16efeb241d66ac"
-    }
-  }
+﻿{
+    "version":  1,
+    "skills":  {
+                   "agent-browser":  {
+                                         "source":  "vercel-labs/agent-browser",
+                                         "sourceType":  "github",
+                                         "skillPath":  "skills/agent-browser/SKILL.md",
+                                         "computedHash":  "0af5e430a59873573e58b3490298cc00e282894e2e0cb99e5e92f200dbc45055"
+                                     },
+                   "binary-analysis-patterns":  {
+                                                    "source":  "wshobson/agents",
+                                                    "sourceType":  "github",
+                                                    "skillPath":  "plugins/reverse-engineering/skills/binary-analysis-patterns/SKILL.md",
+                                                    "computedHash":  "7419e4a0f4dab0dd42dd4916b3a8c1a754c2850030f8ea6560f6370a0850defd"
+                                                },
+                   "binary-hardening":  {
+                                            "source":  "mohitmishra786/low-level-dev-skills",
+                                            "sourceType":  "github",
+                                            "skillPath":  "skills/runtimes/binary-hardening/SKILL.md",
+                                            "computedHash":  "261dfb37c14885b4ee5fac8dc0f4b0ed606f54c0a62fde2068110e5b5846148a"
+                                        },
+                   "binary-triage":  {
+                                         "source":  "cyberkaida/reverse-engineering-assistant",
+                                         "sourceType":  "github",
+                                         "skillPath":  "ReVa/skills/binary-triage/SKILL.md",
+                                         "computedHash":  "97e8e451f4cc6a1c84fb645b81fe8faeabd6ccc33dd60714e1214ba5500787eb"
+                                     },
+                   "brandkit":  {
+                                    "source":  "leonxlnx/taste-skill",
+                                    "sourceType":  "github",
+                                    "skillPath":  "skills/brandkit/SKILL.md",
+                                    "computedHash":  "a250c7b41aecacc412260de2fb429d36ada5f668388aad1770289fa3e5c4f740"
+                                },
+                   "code-security":  {
+                                         "source":  "semgrep/skills",
+                                         "sourceType":  "github",
+                                         "skillPath":  "skills/code-security/SKILL.md",
+                                         "computedHash":  "025128c59e2618761f74607abeb27c3a451a1280658a3f3172386842a2dabc0d"
+                                     },
+                   "ctf-reverse":  {
+                                       "source":  "ljagiello/ctf-skills",
+                                       "sourceType":  "github",
+                                       "skillPath":  "ctf-reverse/SKILL.md",
+                                       "computedHash":  "cbe4bab0fdfe57ee429e67e489a7d8d12a450238e760b6085c5d9ad58c07f06d"
+                                   },
+                   "design-taste-frontend":  {
+                                                 "source":  "leonxlnx/taste-skill",
+                                                 "sourceType":  "github",
+                                                 "skillPath":  "skills/taste-skill/SKILL.md",
+                                                 "computedHash":  "2e064e92aca020b2e0bad69326fe7ea55d59005ed53d1a8cbce1bd135d44b8b3"
+                                             },
+                   "find-skills":  {
+                                       "source":  "vercel-labs/skills",
+                                       "sourceType":  "github",
+                                       "skillPath":  "skills/find-skills/SKILL.md",
+                                       "computedHash":  "8933f2f08f56508d2651505cb807fdb84b6e912897e308cd8aa1c3ffeeecaaab"
+                                   },
+                   "full-output-enforcement":  {
+                                                   "source":  "leonxlnx/taste-skill",
+                                                   "sourceType":  "github",
+                                                   "skillPath":  "skills/output-skill/SKILL.md",
+                                                   "computedHash":  "7b2275b591af7760b36a2dfb1dbcf3c99c5054c52298a1066c4979f39ed947d9"
+                                               },
+                   "ghost-proxy":  {
+                                       "source":  "ghostsecurity/skills",
+                                       "sourceType":  "github",
+                                       "skillPath":  "plugins/ghost/skills/proxy/SKILL.md",
+                                       "computedHash":  "ac7fdf10644dcde42d801ac9ada0237703a8acb92e3869cc4b7e678f0732e3f8"
+                                   },
+                   "ghost-repo-context":  {
+                                              "source":  "ghostsecurity/skills",
+                                              "sourceType":  "github",
+                                              "skillPath":  "plugins/ghost/skills/repo-context/SKILL.md",
+                                              "computedHash":  "a2a737b1e4798cc73f5ca70dc48671858dd229c2f5a709cc9d8669625225a6b4"
+                                          },
+                   "ghost-report":  {
+                                        "source":  "ghostsecurity/skills",
+                                        "sourceType":  "github",
+                                        "skillPath":  "plugins/ghost/skills/report/SKILL.md",
+                                        "computedHash":  "9570bdbec9fbc9e7efb77742af9c26305366156ab4d7c557dc477a390540baf5"
+                                    },
+                   "ghost-scan-code":  {
+                                           "source":  "ghostsecurity/skills",
+                                           "sourceType":  "github",
+                                           "skillPath":  "plugins/ghost/skills/scan-code/SKILL.md",
+                                           "computedHash":  "bf7886dc988c953695c4f1a4e1aa12ed1dc4bf770bed1582eceb3d1f72bace32"
+                                       },
+                   "ghost-scan-deps":  {
+                                           "source":  "ghostsecurity/skills",
+                                           "sourceType":  "github",
+                                           "skillPath":  "plugins/ghost/skills/scan-deps/SKILL.md",
+                                           "computedHash":  "b92f25bdaa87b27d3e1eb4220117355233338a845fc632cb7caa50797e525c9b"
+                                       },
+                   "ghost-scan-secrets":  {
+                                              "source":  "ghostsecurity/skills",
+                                              "sourceType":  "github",
+                                              "skillPath":  "plugins/ghost/skills/scan-secrets/SKILL.md",
+                                              "computedHash":  "d310a895ef4ee1a6d921d09f473a5c85618ab21ee74badcb165d394e65188c6b"
+                                          },
+                   "ghost-validate":  {
+                                          "source":  "ghostsecurity/skills",
+                                          "sourceType":  "github",
+                                          "skillPath":  "plugins/ghost/skills/validate/SKILL.md",
+                                          "computedHash":  "cb991474e7708593dafbbd76775ecba83a8d0ffc56bdef61aa1c056cbba55748"
+                                      },
+                   "high-end-visual-design":  {
+                                                  "source":  "leonxlnx/taste-skill",
+                                                  "sourceType":  "github",
+                                                  "skillPath":  "skills/soft-skill/SKILL.md",
+                                                  "computedHash":  "2d11cdcefc8bf319429ee17d94d69a390802e2acf7163662d1eacbcf5be3ff79"
+                                              },
+                   "image-to-code":  {
+                                         "source":  "leonxlnx/taste-skill",
+                                         "sourceType":  "github",
+                                         "skillPath":  "skills/image-to-code-skill/SKILL.md",
+                                         "computedHash":  "2944189b448e2a77cbbf55014030b1890a9ec5891acc9fa97fb8c215e0008407"
+                                     },
+                   "imagegen-frontend-mobile":  {
+                                                    "source":  "leonxlnx/taste-skill",
+                                                    "sourceType":  "github",
+                                                    "skillPath":  "skills/imagegen-frontend-mobile/SKILL.md",
+                                                    "computedHash":  "3cadf1bfbe836d377832d090e5db8479f98903453a4d1342be9636178755f9dd"
+                                                },
+                   "industrial-brutalist-ui":  {
+                                                   "source":  "leonxlnx/taste-skill",
+                                                   "sourceType":  "github",
+                                                   "skillPath":  "skills/brutalist-skill/SKILL.md",
+                                                   "computedHash":  "bd9c7fd04ae149531eb6bd0d4e8dceee57aa6877fcef3d67ced90e68e755affa"
+                                               },
+                   "minimalist-ui":  {
+                                         "source":  "leonxlnx/taste-skill",
+                                         "sourceType":  "github",
+                                         "skillPath":  "skills/minimalist-skill/SKILL.md",
+                                         "computedHash":  "1a292d1459292649dc5b422e029093259b6127e7df2f37ad8c22033174333a57"
+                                     },
+                   "protocol-reverse-engineering":  {
+                                                        "source":  "wshobson/agents",
+                                                        "sourceType":  "github",
+                                                        "skillPath":  "plugins/reverse-engineering/skills/protocol-reverse-engineering/SKILL.md",
+                                                        "computedHash":  "26ff1f3e05aa4beae1b381141603d198c8557bb4bc8ff6d6384db49f4378236b"
+                                                    },
+                   "redesign-existing-projects":  {
+                                                      "source":  "leonxlnx/taste-skill",
+                                                      "sourceType":  "github",
+                                                      "skillPath":  "skills/redesign-skill/SKILL.md",
+                                                      "computedHash":  "d5a62efaf36fa52ea1966e06ce74452b3466a4f179af34fbce65f2c8e5461349"
+                                                  },
+                   "rev-frida":  {
+                                     "source":  "p4nda0s/reverse-skills",
+                                     "sourceType":  "github",
+                                     "skillPath":  "skills/rev-frida/SKILL.md",
+                                     "computedHash":  "f9eb447e33dd82b9c09b07842c9aeb0f9d2c607420923189437660c4743556dd"
+                                 },
+                   "vulnhunter":  {
+                                      "source":  "sendaifun/skills",
+                                      "sourceType":  "github",
+                                      "skillPath":  "skills/vulnhunter/SKILL.md",
+                                      "computedHash":  "24136320c9ae34e01c1951d5e6ed2f1ea2e8071233113a6d0eeb55bcdb051586"
+                                  },
+                   "windows-av-evasion":  {
+                                              "source":  "yaklang/hack-skills",
+                                              "sourceType":  "github",
+                                              "skillPath":  "skills/windows-av-evasion/SKILL.md",
+                                              "computedHash":  "b7d82c1ac86886807bb4a9418374cfde44c29cebf90db0f77bf28580aaf74ae5"
+                                          },
+                   "windows-lateral-movement":  {
+                                                    "source":  "yaklang/hack-skills",
+                                                    "sourceType":  "github",
+                                                    "skillPath":  "skills/windows-lateral-movement/SKILL.md",
+                                                    "computedHash":  "d35ee2fc42476667ba237cd35f198e0c6cc4c2fd858795681db035be766a9250"
+                                                },
+                   "windows-privilege-escalation":  {
+                                                        "source":  "yaklang/hack-skills",
+                                                        "sourceType":  "github",
+                                                        "skillPath":  "skills/windows-privilege-escalation/SKILL.md",
+                                                        "computedHash":  "1421c1929887d3470f2207421baaae1f3b2c43c9e029e48422b82edfd5e21fa5"
+                                                    },
+                   "testing-cors-misconfiguration":  {
+                                                         "source":  "mukul975/Anthropic-Cybersecurity-Skills",
+                                                         "sourceType":  "github",
+                                                         "skillPath":  "skills/testing-cors-misconfiguration/SKILL.md",
+                                                         "computedHash":  "54fde749325b8551106f6571f549b033a6d7f7d0e681bcec4778bead926cb870"
+                                                     },
+                   "testing-for-host-header-injection":  {
+                                                             "source":  "mukul975/Anthropic-Cybersecurity-Skills",
+                                                             "sourceType":  "github",
+                                                             "skillPath":  "skills/testing-for-host-header-injection/SKILL.md",
+                                                             "computedHash":  "efe184bc45db6cb3d80a0e96db3aad43cc8c9e517a517d4eccbb556df3309112"
+                                                         },
+                   "testing-for-open-redirect-vulnerabilities":  {
+                                                                     "source":  "mukul975/Anthropic-Cybersecurity-Skills",
+                                                                     "sourceType":  "github",
+                                                                     "skillPath":  "skills/testing-for-open-redirect-vulnerabilities/SKILL.md",
+                                                                     "computedHash":  "fa1b2f69029057c67db5c9ae6d4ba7d4ed2f6ca488159ba59b543ab7a1b89140"
+                                                                 },
+                   "testing-websocket-api-security":  {
+                                                          "source":  "mukul975/Anthropic-Cybersecurity-Skills",
+                                                          "sourceType":  "github",
+                                                          "skillPath":  "skills/testing-websocket-api-security/SKILL.md",
+                                                          "computedHash":  "a2a8c1afc6f26f8f1c4d9cb3adf07e8fae492fd5eccbc3000f38856876ea72c3"
+                                                      },
+                   "exploiting-websocket-vulnerabilities":  {
+                                                                "source":  "mukul975/Anthropic-Cybersecurity-Skills",
+                                                                "sourceType":  "github",
+                                                                "skillPath":  "skills/exploiting-websocket-vulnerabilities/SKILL.md",
+                                                                "computedHash":  "b4c3d1889ac7088ac48bf2614f0977830744d6c7ed76647162988ff3b86772cc"
+                                                            },
+                   "detecting-shadow-api-endpoints":  {
+                                                          "source":  "mukul975/Anthropic-Cybersecurity-Skills",
+                                                          "sourceType":  "github",
+                                                          "skillPath":  "skills/detecting-shadow-api-endpoints/SKILL.md",
+                                                          "computedHash":  "1fb644cad50c0438f73d1a29ac640df683e371ab4293c3fd9bbcd609a86f94b8"
+                                                      },
+                   "performing-api-inventory-and-discovery":  {
+                                                                  "source":  "mukul975/Anthropic-Cybersecurity-Skills",
+                                                                  "sourceType":  "github",
+                                                                  "skillPath":  "skills/performing-api-inventory-and-discovery/SKILL.md",
+                                                                  "computedHash":  "5f24d1f9a747d065c7d2740d7bf76ea8a90c798613e53d50d59a038d20d3d2aa"
+                                                              },
+                   "performing-api-rate-limiting-bypass":  {
+                                                               "source":  "mukul975/Anthropic-Cybersecurity-Skills",
+                                                               "sourceType":  "github",
+                                                               "skillPath":  "skills/performing-api-rate-limiting-bypass/SKILL.md",
+                                                               "computedHash":  "76a01d2f879f5ec4ae22ffde2a41bc8bbd121564b8c674f6d26f6693aafd0e16"
+                                                           },
+                   "testing-for-email-header-injection":  {
+                                                              "source":  "mukul975/Anthropic-Cybersecurity-Skills",
+                                                              "sourceType":  "github",
+                                                              "skillPath":  "skills/testing-for-email-header-injection/SKILL.md",
+                                                              "computedHash":  "2a95d23659936b154080b2a082e298f3ecc066d23bcbb180e3ff92c834fd6d99"
+                                                          },
+                   "detecting-ai-model-prompt-injection-attacks":  {
+                                                                       "source":  "mukul975/Anthropic-Cybersecurity-Skills",
+                                                                       "sourceType":  "github",
+                                                                       "skillPath":  "skills/detecting-ai-model-prompt-injection-attacks/SKILL.md",
+                                                                       "computedHash":  "e2fbbcbab85f756dadf5488b9e239a3e55e42cc75e4f8349c7a08c587d7777d7"
+                                                                   },
+                   "detecting-indirect-prompt-injection":  {
+                                                               "source":  "mukul975/Anthropic-Cybersecurity-Skills",
+                                                               "sourceType":  "github",
+                                                               "skillPath":  "skills/detecting-indirect-prompt-injection/SKILL.md",
+                                                               "computedHash":  "5e77fd560a03452057914acb1f364c6e4ff7c852faff32330c63d48a7f9d28e6"
+                                                           },
+                   "testing-prompt-injection-in-rag-pipelines":  {
+                                                                     "source":  "mukul975/Anthropic-Cybersecurity-Skills",
+                                                                     "sourceType":  "github",
+                                                                     "skillPath":  "skills/testing-prompt-injection-in-rag-pipelines/SKILL.md",
+                                                                     "computedHash":  "993811d4d8d5f61746a5f410e3174082004a13caa031db1c21416c29f756785b"
+                                                                 },
+                   "testing-for-system-prompt-leakage":  {
+                                                             "source":  "mukul975/Anthropic-Cybersecurity-Skills",
+                                                             "sourceType":  "github",
+                                                             "skillPath":  "skills/testing-for-system-prompt-leakage/SKILL.md",
+                                                             "computedHash":  "37d8c2e8b8155678ecfddf974082533d5363697c3bdb525277da40282dc8bebc"
+                                                         }
+               }
 }

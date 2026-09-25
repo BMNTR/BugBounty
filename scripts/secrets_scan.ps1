@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory=$true)]
     [string]$Path,
     [switch]$Gitleaks,
@@ -9,19 +9,21 @@ param(
 $ErrorActionPreference = "Continue"
 $toolsDir = "C:\BugBounty\tools"
 $reportsDir = "C:\BugBounty\reports"
+if (-not (Test-Path $reportsDir)) { New-Item -ItemType Directory -Force -Path $reportsDir | Out-Null }
 $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User") + ";$toolsDir;$env:USERPROFILE\go\bin;$env:USERPROFILE\.cargo\bin"
 $reportFile = "$reportsDir\secrets_scan_$(Get-Date -Format 'yyyyMMdd_HHmmss').md"
 
 if (-not (Test-Path $Path)) { Write-Error "Path not found: $Path"; exit 1 }
 
 $results = @("# Secrets Scan Report`n`nTarget: $Path`nDate: $(Get-Date)`n")
+$fence = [string][char]96 + [string][char]96 + [string][char]96
 
 if ($All -or $Gitleaks) {
     Write-Output "[*] Running Gitleaks..."
     if (Get-Command gitleaks -ErrorAction SilentlyContinue) {
         $gitleaksOut = & gitleaks detect --source $Path --report-path "$reportsDir\gitleaks_report.json" --no-git 2>&1
-        $results += "`n## Gitleaks Results`n`n`n```"
-        $results += "`n$($gitleaksOut -join "`n")`n```"
+        $results += "`n## Gitleaks Results`n$fence"
+        $results += "`n$($gitleaksOut -join "`n")`n$fence"
         $results += "`n"
         if (Test-Path "$reportsDir\gitleaks_report.json") {
             $results += "Full report: $reportsDir\gitleaks_report.json`n"
@@ -44,3 +46,5 @@ if ($All -or $Trufflehog) {
 
 $results -join "" | Set-Content -Path $reportFile
 Write-Output "[*] Scan complete. Report: $reportFile"
+
+
