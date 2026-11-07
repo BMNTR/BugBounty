@@ -1,4 +1,4 @@
-﻿---
+---
 name: bbp-report-writer
 description: Write and self-triage bug bounty reports for HackerOne, YesWeHack, and similar platforms. Structures drafts from raw hunter notes, validates before submission, and applies per-class gotcha checks. Use after a validated finding.
 ---

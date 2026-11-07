@@ -35,10 +35,27 @@ def run_tool(
     extra_headers: Optional[list[str]] = None,
     timeout: int = 120,
     cwd: Optional[Path] = None,
+    input_data: Optional[str] = None,
+    active_proxy=None,
 ) -> tuple[str, str, int]:
-    """Run a tool with proxy and headers injected."""
+    """Run a tool with proxy and headers injected.
+
+    Pass active_proxy (resolved ONCE via proxy.current) so env vars and
+    explicit -x/-proxy flags stay in sync in rotate mode. If omitted,
+    falls back to proxy.peek() (no rotation).
+    """
     env = os.environ.copy()
-    env.update(proxy.get_env())
+    if active_proxy is None:
+        # One rotation per tool call (preserves intentional WAF-evasion
+        # rotation for env-only tools like subfinder/assetfinder).
+        active_proxy = proxy.current
+    if active_proxy is not None:
+        env.update({
+            "HTTP_PROXY": active_proxy.url,
+            "HTTPS_PROXY": active_proxy.url,
+            "ALL_PROXY": active_proxy.url,
+            "NO_PROXY": "127.0.0.1,localhost,.local",
+        })
 
     final_cmd = list(cmd)
 
@@ -54,6 +71,7 @@ def run_tool(
             timeout=timeout,
             env=env,
             cwd=str(cwd) if cwd else None,
+            input=input_data,
         )
         return r.stdout, r.stderr, r.returncode
     except subprocess.TimeoutExpired:
@@ -65,11 +83,11 @@ def run_tool(
 class ReconRunner:
     """Orchestrates WAF-aware recon using installed tools."""
 
-    def __init__(self, proxy: ProxyManager, bb_dir: Path = Path(r"C:\BugBounty")):
+    def __init__(self, proxy: ProxyManager, bb_dir: Optional[Path] = None):
         self.proxy = proxy
-        self.bb_dir = bb_dir
-        self.tools_dir = bb_dir / "tools"
-        self.wordlists_dir = bb_dir / "wordlists"
+        self.bb_dir = bb_dir if bb_dir is not None else Path(__file__).resolve().parent.parent
+        self.tools_dir = self.bb_dir / "tools"
+        self.wordlists_dir = self.bb_dir / "wordlists"
 
     def _tool_path(self, name: str) -> str:
         """Find tool binary."""
@@ -146,7 +164,7 @@ class ReconRunner:
     def phase_alive(
         self, subs: list[str], out_dir: Path, waf_flags: dict
     ) -> list[str]:
-        """Phase 2: Alive host probing with WAF-aware flags."""
+        """Phase 2: Alive host probing with browser UA (WAF-friendly)."""
         print(f"\n{'='*50}")
         print(f"  PHASE 2: Live Host Probing")
         print(f"{'='*50}")
@@ -154,6 +172,10 @@ class ReconRunner:
         alive_file = out_dir / "alive.txt"
         temp_file = out_dir / "_subs_temp.txt"
         temp_file.write_text("\n".join(subs) + "\n")
+
+        # Resolve proxy ONCE per phase so env + explicit flag stay in sync
+        # (ProxyManager.current rotates on every access in rotate mode).
+        active_proxy = self.proxy.current
 
         cmd = [
             self._tool_path("httpx"),
@@ -166,11 +188,15 @@ class ReconRunner:
             "-o", str(alive_file),
         ]
 
-        if self.proxy.current:
-            cmd.extend(["-http-proxy", self.proxy.current.url])
+        if active_proxy:
+            cmd.extend(["-http-proxy", active_proxy.url])
 
         print(f"  [>] httpx probing {len(subs)} hosts...")
-        out, err, code = run_tool(cmd, self.proxy, timeout=180)
+        # Browser UA matches bbp-web-recon workflow; keeps WAF noise low.
+        out, err, code = run_tool(cmd, self.proxy,
+                                  extra_headers=self._ua_flag(),
+                                  timeout=180,
+                                  active_proxy=active_proxy)
 
         alive_urls: list[str] = []
         if alive_file.exists():
@@ -191,7 +217,8 @@ class ReconRunner:
         urls_file = out_dir / "urls.txt"
         all_urls: set[str] = set()
 
-        # gau
+        # gau reads domains from args or stdin; feed subs via stdin so
+        # large subdomain lists don't overflow the arg limit.
         print(f"  [>] gau")
         temp_file = out_dir / "_subs_temp.txt"
         temp_file.write_text("\n".join(subs) + "\n")
@@ -200,6 +227,7 @@ class ReconRunner:
             self.proxy,
             extra_headers=self._ua_flag(),
             timeout=180,
+            input_data="\n".join(subs),
         )
         gau_file = out_dir / "_gau.txt"
         if gau_file.exists():
@@ -208,15 +236,17 @@ class ReconRunner:
                 if line:
                     all_urls.add(line)
 
-        # waybackurls
+        # waybackurls reads from stdin only; reuse gau's proxy slot so both
+        # passive sources share one rotation per phase.
         print(f"  [>] waybackurls")
-        out2, err2, code2 = run_tool(
-            [self._tool_path("waybackurls")],
-            self.proxy,
-            timeout=120,
-        )
-        # waybackurls reads from stdin, so this won't work perfectly via subprocess
-        # fallback: try feeding subs via stdin
+        wb_proxy = self.proxy.peek()
+        wb_env = {**os.environ}
+        if wb_proxy is not None:
+            wb_env.update({
+                "HTTP_PROXY": wb_proxy.url,
+                "HTTPS_PROXY": wb_proxy.url,
+                "ALL_PROXY": wb_proxy.url,
+            })
         try:
             r = subprocess.run(
                 [self._tool_path("waybackurls")],
@@ -224,7 +254,7 @@ class ReconRunner:
                 capture_output=True,
                 text=True,
                 timeout=120,
-                env={**os.environ, **self.proxy.get_env()},
+                env=wb_env,
             )
             for line in r.stdout.splitlines():
                 line = line.strip()
@@ -284,11 +314,15 @@ class ReconRunner:
         if waf_flags["rate_limit"] < 100:
             cmd.extend(["-rl", str(waf_flags["rate_limit"]), "-bs", "15"])
 
-        if self.proxy.current:
-            cmd.extend(["-proxy", self.proxy.current.url])
+        active_proxy = self.proxy.current
+        if active_proxy:
+            cmd.extend(["-proxy", active_proxy.url])
 
         print(f"  [>] nuclei scan (rate-limit={waf_flags['rate_limit']}/min)")
-        out, err, code = run_tool(cmd, self.proxy, timeout=600)
+        out, err, code = run_tool(cmd, self.proxy,
+                                  extra_headers=self._ua_flag(),
+                                  timeout=600,
+                                  active_proxy=active_proxy)
 
         findings = []
         if nuclei_file.exists():
@@ -332,6 +366,7 @@ class ReconRunner:
 
         # Only scan top 3 targets to avoid massive bans
         targets = alive_urls[:3]
+        active_proxy = self.proxy.current
         for t in targets:
             safe = t.replace("://", "_").replace("/", "_").replace(".", "_")
             out_json = out_dir / f"ffuf_{safe}.json"
@@ -343,15 +378,17 @@ class ReconRunner:
                 "-t", "30",
                 "-o", str(out_json),
                 "-of", "json",
-                "-fc", "404,403",
+                "-fc", "404",
             ]
+            cmd.extend(self._ua_flag())
             if waf_flags["jitter"]:
                 cmd.extend(["-p", waf_flags["jitter"]])
-            if self.proxy.current:
-                cmd.extend(["-x", self.proxy.current.url])
+            if active_proxy:
+                cmd.extend(["-x", active_proxy.url])
 
             print(f"  [>] ffuf {t} ({wordlist})")
-            out, err, code = run_tool(cmd, self.proxy, timeout=120)
+            out, err, code = run_tool(cmd, self.proxy, timeout=120,
+                                      active_proxy=active_proxy)
 
             # Parse results
             if out_json.exists():

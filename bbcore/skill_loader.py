@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 SKILL_DIR = Path(__file__).resolve().parent.parent / ".agents" / "skills"
+GLOBAL_SKILL_DIR = Path.home() / ".agents" / "skills"
 
 CLASSIFICATION_MAP = {
     "web": {
@@ -76,8 +77,10 @@ ALWAYS_LOAD = [
 
 
 class SkillLoader:
-    def __init__(self, bb_dir: Path = Path(r"C:\BugBounty")):
-        self.skill_dir = bb_dir / ".agents" / "skills"
+    def __init__(self, bb_dir: Optional[Path] = None):
+        target_dir = bb_dir if bb_dir is not None else Path(__file__).resolve().parent.parent
+        self.skill_dir = target_dir / ".agents" / "skills"
+        self.global_skill_dir = Path.home() / ".agents" / "skills"
 
     def list_available(self) -> list[str]:
         if not self.skill_dir.exists():
@@ -85,10 +88,13 @@ class SkillLoader:
         return sorted(d.name for d in self.skill_dir.iterdir() if d.is_dir())
 
     def load_skill(self, name: str) -> Optional[str]:
-        """Read a skill's SKILL.md content."""
+        """Read a skill's SKILL.md content (local first, global fallback)."""
         skill_file = self.skill_dir / name / "SKILL.md"
         if skill_file.exists():
             return skill_file.read_text()
+        global_file = self.global_skill_dir / name / "SKILL.md"
+        if global_file.exists():
+            return global_file.read_text()
         return None
 
     def get_skill_context(self, name: str, max_lines: int = 50) -> Optional[str]:

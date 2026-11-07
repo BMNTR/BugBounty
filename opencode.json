@@ -29,5 +29,13 @@
       "template": "Launches Shield Browser with BugBounty integration",
       "description": "Launch browser with BB integration"
     }
+  },
+  "mcp": {
+    "rea": {
+      "type": "local",
+      "command": ["npx", "-y", "rea-agents@latest", "mcp"],
+      "enabled": true,
+      "timeout": 60000
+    }
   }
 }

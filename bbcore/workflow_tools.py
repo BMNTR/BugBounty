@@ -30,7 +30,7 @@ try:
 except ImportError:  # pragma: no cover
     tomllib = None
 
-BB_DIR = Path(r"C:\BugBounty")
+BB_DIR = Path(__file__).resolve().parent.parent
 PROGRAMS_DIR = BB_DIR / "programs"
 SKILLS_DIR = BB_DIR / ".agents" / "skills"
 
@@ -92,6 +92,19 @@ def _read_lines(path: Path) -> list:
 def _primary_domain(slug: str, override=None):
     if override:
         return override
+    # Prefer declared scope/state over guessing from slug text (slugs use
+    # dashes, so naive slug.replace('-','.') would corrupt real dashes).
+    st = _load_state(slug)
+    for key in ("recon_domain", "url"):
+        v = st.get(key)
+        if v:
+            s = str(v).lower()
+            if "://" in s:
+                from urllib.parse import urlparse as _up
+                s = _up(s).netloc or s
+            s = s.split("/")[0].split(":")[0].lstrip(".")
+            if "." in s:
+                return s
     for cand in (_program_dir(slug) / "policy" / "bb.toml",
                  _program_dir(slug) / "bb.toml"):
         if cand.exists() and tomllib:
@@ -102,7 +115,7 @@ def _primary_domain(slug: str, override=None):
                     return str(domains[0])
             except Exception:
                 pass
-    # fall back to slug text
+    # last resort: underscores are unambiguous; dashes stay as-is
     return slug.replace("_", ".")
 
 
@@ -382,7 +395,10 @@ def run_diff(args):
     base.mkdir(parents=True, exist_ok=True)
 
     cur_subs = set(_read_lines(rdir / "subs.txt"))
-    cur_hosts = _extract_hosts(_read_lines(rdir / "httpx.txt"))
+    # recon_runner writes alive.txt; older skill docs reference httpx.txt —
+    # accept both so diff never silently sees 0 hosts.
+    httpx_lines = _read_lines(rdir / "alive.txt") + _read_lines(rdir / "httpx.txt")
+    cur_hosts = _extract_hosts(httpx_lines)
 
     old_subs_f = base / "subs.txt"
     old_hosts_f = base / "hosts.txt"
@@ -494,6 +510,13 @@ def run_oob(args):
             print(f"[+] Stopped pid {pid}")
         except Exception as exc:
             print(f"[!] taskkill issue: {exc}")
+        # Sessions started via WSL leave interactsh-client alive inside WSL
+        # even after the wrapper pid dies — best-effort cleanup.
+        try:
+            subprocess.run(["wsl", "bash", "-lc", "pkill -f interactsh-client"],
+                           capture_output=True, timeout=15)
+        except Exception:
+            pass
         pid_file.unlink(missing_ok=True)
         return 0
     if action == "status":
@@ -644,7 +667,10 @@ def check_asset(scope, asset: str):
         if _matches(a, pat):
             return "OUT", f"matches EXCLUSION {pat}"
     for pat in scope.get("in", []):
-        if _matches(a, pat) or ("." not in a and a == pat.split(".")[0]):
+        # Explicit match only. Short names like 'api' do NOT match
+        # 'api.example.com' — add the full host to bb.toml instead.
+        # (The old prefix heuristic caused false-IN verdicts.)
+        if _matches(a, pat):
             return "IN", f"matches scope entry {pat}"
     return "UNKNOWN", ("no explicit match - treat as OUT until proven otherwise"
                        " (RTFS!)")
@@ -705,6 +731,7 @@ def run_scope(args):
                         violations.setdefault(m, []).append(
                             f"{sub}/{f.name}: {reason}")
         print(f"[*] Sweep complete. Unique domains evaluated: {checked}")
+        print("[*] Note: .png/.jpg/.zip/.pdf skipped (no OCR) — check screenshots manually.")
         if not violations:
             print("[+] CLEAN - no out-of-scope assets referenced in artifacts.")
             return 0

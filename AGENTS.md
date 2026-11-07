@@ -32,12 +32,25 @@
   ├── .gitignore         ← Git ignore rules
   ├── manifest.json      ← Skills manifest
   ├── skills-lock.json   ← Skills lock file
+  ├── opencode.json      ← OpenCode slash-command config
+  ├── cookies.txt        ← EXCEPTION: session file at root by design (hardcoded in scripts/setup-cookies.ps1, _scripts/load-cookies.ps1, _scripts/inject-cookies.ps1, scripts/auto-login.js). Do NOT move without updating those 4 scripts.
   ├── assets/            ← GitHub Banners/Images
   ├── bbcore/            ← Core orchestrator framework
   ├── orchestrate.ps1    ← Unified CLI entry point
   ├── tools/             ← Global Hacking Tools
-  ├── TriageTalon/       ← Attack Surface Recon API
-  └── wordlists/         ← Global Wordlists (SecLists, etc)
+  ├── TriageTalon/       ← Attack Surface Recon API (gitignored, local only)
+  ├── wordlists/         ← Global Wordlists (SecLists, etc)
+  ├── scripts/           ← Global audit scripts (source/secrets/mobile/deps)
+  ├── _scripts/          ← Helper scripts (cookie inject/load, vision MCP)
+  ├── _templates/        ← bb.toml + report templates
+  ├── .agents/           ← Local skills (76 dirs, see Skill Reference)
+  ├── programs/          ← Per-program workspaces (gitignored)
+  ├── temp/              ← Shared scratch when no active program (see rule 7)
+  ├── reports/           ← Global scan output (scripts/secrets_scan.ps1 writes here by design; program reports stay in programs/<slug>/reports/)
+  ├── _backups/          ← Program zip archives (gitignored, single-copy — sync offsite)
+  ├── .github/           ← CI workflows
+  ├── .opencode/         ← OpenCode agent config
+  └── .git/              ← VCS metadata
   ```
 
   **File placement rules — ALWAYS follow this:**
@@ -58,9 +71,9 @@
   5. If a file is a recon output (subdomains, nuclei, ffuf) → put it in `programs/<target-name>/recon/`.
   6. NEVER write files to root, Desktop, Downloads, or any path outside `C:\BugBounty\programs\<target-name>\`.
   7. If no active program is set and you need scratch space, use `C:\BugBounty\temp\` ONLY — and remind the user to assign a program.
-  8. `cookies.txt` is session-specific: keep it in `C:\BugBounty\temp\` if shared, or in `programs/<target-name>/temp/` if program-specific.
+  8. `cookies.txt` is session-specific: root copy is the canonical one (4 scripts hardcode `C:\BugBounty\cookies.txt`). Keep a program-specific copy in `programs/<target-name>/temp/` only if you need isolation.
   9. Global utility scripts go in `C:\BugBounty\_scripts\`. Target-specific scripts go in `programs/<target-name>/scripts/`.
-  10. When starting work on a new program, ALWAYS run: `New-Item -ItemType Directory -Force -Path "programs/<slug>/{recon,evidence,reports,scripts,temp}"` to pre-create the folder structure.
+  10. When starting work on a new program, ALWAYS run: `foreach ($d in @('recon','evidence','reports','scripts','temp')) { New-Item -ItemType Directory -Force -Path "programs/<slug>/$d" }` to pre-create the folder structure. (Do NOT use `{a,b}` brace expansion — PowerShell 5.1 does not expand it.)
 
 ## Report Discipline Rules (Always-On)
 
@@ -127,9 +140,9 @@ When ANY of the patterns below are detected in user input during a bug bounty co
 - Core orchestrator: `C:\BugBounty\bbcore\` — proxy_manager, waf_detector, recon_runner, skill_loader, orchestrator
 - CLI: `.\orchestrate.ps1` or `python bbcore/cli.py`
 - Browser integration: `C:\ProjectBrowser\bounty_integration.py`
-- Skills: `C:\BugBounty\.agents\skills\` — 80 skills, load via `/skill <name>`:
+- Skills: `C:\BugBounty\.agents\skills\` — 76 local dirs, load via `/skill <name>` (+ global fallback `C:\Users\rafli\.agents\skills\` for shared skills):
   - **bbp-ops** — `bbp-program-orchestrator`, `bbp-program-triage`, `bbp-duplicate-guard`, `bbp-evidence-workbench`, `bbp-report-writer`
-  - **bbp-recon** — `bbp-web-recon`, `bbp-subdomain-takeover`, `bbp-cloud-security-audit`
+  - **bbp-recon** — `bbp-web-recon`, `bbp-subdomain-takeover`, `bbp-cloud-security-audit`, `bbp-triagetalon-pro`
   - **bbp-web-attacks** — `bbp-xss-hunter`, `bbp-sqli-hunter`, `bbp-ssrf-hunter`, `bbp-osci-hunter`, `bbp-xxe-hunter`, `bbp-prototype-pollution`, `bbp-cache-poisoning`, `bbp-file-upload-lfi`, `bbp-advanced-fuzzing`
   - **bbp-web-security** — `bbp-api-audit`, `bbp-auth-bypass`, `bbp-graphql-audit`, `bbp-business-logic`, `bbp-waf-bypass`, `bbp-wpscan`, `bbp-spring-actuator-audit`, `bbp-rsocket-testing`, `bbp-java-deserialization`
   - **bbp-mobile** — `bbp-android-apk-audit`, `bbp-mobile-reverse-engine`, `bbp-mobile-dynamic-analysis`, `bbp-mobile-ipc-exploit`, `bbp-mobile-local-storage`
@@ -140,7 +153,8 @@ When ANY of the patterns below are detected in user input during a bug bounty co
   - **ghost-security** — `ghost-proxy`, `ghost-repo-context`, `ghost-report`, `ghost-scan-code`, `ghost-scan-deps`, `ghost-scan-secrets`, `ghost-validate`
   - **binary-analysis** — `binary-analysis-patterns`, `binary-hardening`, `binary-triage`, `ctf-reverse`, `protocol-reverse-engineering`, `rev-frida`
   - **windows-security** — `windows-av-evasion`, `windows-lateral-movement`, `windows-privilege-escalation`
-  - **agent-core** — `agent-browser`, `find-skills`
+  - **agent-core** — `agent-browser`, `find-skills`, `full-output-enforcement`
+  - **global-only** (in `C:\Users\rafli\.agents\skills\`, auto-fallback via SkillLoader) — `bbp-edoverflow-cheatsheet`, `security-auditor`, `variant-analysis`, `security-scanning-security-sast`, `brandkit`, `design-taste-frontend`, etc.
 
 ## Slash Commands
 
@@ -274,7 +288,7 @@ Private programs (YesWeHack private, H1 private, Bugcrowd private) need authenti
 
 1. Login to the platform in your browser
 2. Export cookies using `.\scripts\setup-cookies.ps1`
-3. Save cookies to `cookies.txt` (Netscape format)
+3. Save cookies to `C:\BugBounty\cookies.txt` (Netscape format, root canonical path)
 4. Run `/program` again — script will auto-detect and use the cookies
 
 The script checks for `cookies.txt` in the project root. If present, it sends the cookies with every program page fetch.
@@ -288,8 +302,9 @@ The script checks for `cookies.txt` in the project root. If present, it sends th
 - `.\orchestrate.ps1 report <slug>` — generate report from `_templates/report.md`
 - `.\orchestrate.ps1 status` — orchestrator status
 - `.\orchestrate.ps1 programs` — list all programs
-- `.\orchestrate.ps1 skills` — list 80 available skills
+- `.\orchestrate.ps1 skills` — list local available skills
 - `.\orchestrate.ps1 browser` — launch Shield Browser with BB integration
+- Full workflow set (see `python bbcore/cli.py help`): `jsrecon`, `route`, `diff`, `oob`, `plan`, `scope`, `next`/`next-done`, `backup`, `doctor`, `triagetalon`
 
 ### Original Scripts (also callable via bbcore)
 - `.\scripts\source_audit.ps1 -Path <path>` — source code audit (semgrep, codeql, ripgrep)

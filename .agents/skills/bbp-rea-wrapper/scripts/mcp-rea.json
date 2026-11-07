@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "rea": {
+      "command": "npx",
+      "args": ["-y", "rea-agents@latest", "mcp"],
+      "env": {
+        "REA_BROWSER_OBSERVE_ENABLED": "true",
+        "REA_BROWSER_CDP_ENDPOINTS_JSON": "[\"http://127.0.0.1:9222\"]",
+        "REA_BROWSER_ALLOWED_ORIGINS_JSON": "[\"http://localhost:3000\", \"http://127.0.0.1:3000\"]",
+        "REA_V8_INSPECTOR_OBSERVE_ENABLED": "true",
+        "REA_PROCESS_CAPTURE_ENABLED": "false"
+      }
+    }
+  }
+}

@@ -14,7 +14,7 @@ param(
   [Parameter(ValueFromRemainingArguments=$true)]$Args_
 )
 
-$BB_DIR = "C:\BugBounty"
+$BB_DIR = if ($PSScriptRoot) { $PSScriptRoot } else { "C:\BugBounty" }
 $PYTHON = "python"
 $CLI_PY = Join-Path $BB_DIR "bbcore\cli.py"
 

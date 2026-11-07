@@ -103,6 +103,14 @@ class ProxyManager:
 
     @property
     def current(self) -> Optional[Proxy]:
+        """Return next proxy in rotation (rotates on every access).
+
+        NOTE: rotation across tool calls is intentional for WAF evasion.
+        Within a single tool call, resolve ONCE and reuse the result for
+        both env vars and explicit -x/-proxy flags — otherwise env and
+        flag can point at two different proxies. Use peek() for
+        side-effect-free reads (status checks).
+        """
         if self.mode == self.MODE_DIRECT:
             return None
         if self.mode == self.MODE_TOR:
@@ -118,9 +126,24 @@ class ProxyManager:
                 return proxy
         return None
 
+    def peek(self) -> Optional[Proxy]:
+        """Return current proxy WITHOUT rotating (for status/env checks)."""
+        if self.mode == self.MODE_DIRECT:
+            return None
+        if self.mode == self.MODE_TOR:
+            return Proxy("socks5", "127.0.0.1", 9050)
+        if self.mode == self.MODE_STATIC:
+            return self.static_proxy
+        if self.mode == self.MODE_ROTATE:
+            with self._lock:
+                if not self.proxy_list:
+                    return None
+                return self.proxy_list[self._current_index % len(self.proxy_list)]
+        return None
+
     def get_env(self) -> dict[str, str]:
-        """Get environment variables for child processes."""
-        proxy = self.current
+        """Get environment variables for child processes (no rotation)."""
+        proxy = self.peek()
         if proxy is None:
             return {}
         return {
@@ -131,7 +154,7 @@ class ProxyManager:
         }
 
     def curl_args(self) -> list[str]:
-        proxy = self.current
+        proxy = self.peek()
         if proxy is None:
             return []
         if proxy.protocol.startswith("socks"):
@@ -139,26 +162,35 @@ class ProxyManager:
         return ["-x", proxy.url]
 
     def start_tor(self, tor_path: Optional[str] = None) -> bool:
-        """Start Tor process if not running."""
+        """Start Tor process if not running (optional mode; binary may be absent)."""
+        import shutil
         if self._tor_process and self._tor_process.poll() is None:
             return True
-        paths = [
+        candidates = [
             tor_path,
             str(Path.cwd() / "tor_bundle" / "Tor" / "tor.exe"),
             str(Path.home() / "scoop" / "apps" / "tor" / "current" / "tor.exe"),
-            "tor",
         ]
-        for p in paths:
-            if p and Path(p).exists():
-                try:
-                    self._tor_process = subprocess.Popen(
-                        [p], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-                    )
-                    time.sleep(3)
-                    self.mode = self.MODE_TOR
-                    return True
-                except Exception:
-                    continue
+        which_tor = shutil.which("tor")
+        if which_tor:
+            candidates.append(which_tor)
+        else:
+            candidates.append("tor")
+        for p in candidates:
+            if not p:
+                continue
+            # Allow bare command names resolved via PATH (shutil.which)
+            if p != "tor" and not Path(p).exists():
+                continue
+            try:
+                self._tor_process = subprocess.Popen(
+                    [p], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                )
+                time.sleep(3)
+                self.mode = self.MODE_TOR
+                return True
+            except Exception:
+                continue
         return False
 
     def stop_tor(self):
@@ -180,7 +212,7 @@ class ProxyManager:
             return "Direct"
         if self.mode == self.MODE_TOR:
             return "Tor"
-        p = self.current
+        p = self.peek()
         if p:
             return f"{p.protocol.upper()} {p.host}:{p.port}"
         return "None"

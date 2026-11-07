@@ -121,12 +121,19 @@ Commands:
 
 def cmd_triagetalon(args):
     domain = args[0] if args else ""
-    slug = args[1] if len(args) > 1 else (orc.program.slug if orc.program else domain.replace(".", "_"))
+    if len(args) > 1:
+        slug = args[1]
+    elif orc.program:
+        slug = orc.program.slug
+    else:
+        from bbcore.orchestrator import slugify
+        slug = slugify(domain)
     if not domain:
         print("[-] Usage: triagetalon <domain> [slug]")
         return
     import subprocess
-    cmd = [sys.executable, r"C:\BugBounty\TriageTalon\recon_local_pro.py", domain, slug]
+    recon_script = Path(__file__).resolve().parent.parent / "TriageTalon" / "recon_local_pro.py"
+    cmd = [sys.executable, str(recon_script), domain, slug]
     subprocess.run(cmd)
 
 

@@ -1,0 +1,53 @@
+name: CI & Hygiene Pipeline
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  hygiene-and-security:
+    name: Repository Hygiene & Security Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run Hygiene & Security Gatekeeper
+        run: |
+          python scripts/verify_hygiene.py
+
+  test-and-quality:
+    name: Unit Tests & Orchestrator Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install requests
+
+      - name: Python Syntax Compilation
+        run: |
+          python -m compileall bbcore _scripts scripts tests -q
+
+      - name: Run Test Suite
+        run: |
+          python -m unittest discover tests -v
+
+      - name: Verify Orchestrator CLI Sanity
+        run: |
+          python bbcore/cli.py help
+          python bbcore/cli.py skills

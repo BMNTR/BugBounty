@@ -17,7 +17,7 @@ import zipfile
 from datetime import datetime
 from pathlib import Path
 
-BB_DIR = Path(r"C:\BugBounty")
+BB_DIR = Path(__file__).resolve().parent.parent
 PROGRAMS_DIR = BB_DIR / "programs"
 SKILLS_DIR = BB_DIR / ".agents" / "skills"
 BACKUPS_DIR = BB_DIR / "_backups"
@@ -112,10 +112,11 @@ def run_doctor(args):
     except OSError:
         pass
 
-    # skills integrity quick count
+    # skills integrity quick count (local baseline 76 as of 2026-09; global
+    # skills in ~/.agents/skills resolve via SkillLoader fallback)
     n_skills = len([d for d in SKILLS_DIR.iterdir() if d.is_dir()]) \
         if SKILLS_DIR.is_dir() else 0
-    problems += 0 if _check(f"skills installed ({n_skills})", n_skills >= 80) else 1
+    problems += 0 if _check(f"skills installed ({n_skills})", n_skills >= 70) else 1
 
     # backups freshness warning
     backups = BACKUPS_DIR.glob("*.zip") if BACKUPS_DIR.is_dir() else []
